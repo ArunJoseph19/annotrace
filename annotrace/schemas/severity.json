@@ -1,0 +1,19 @@
+{
+  "id": "severity",
+  "name": "Severity, with a follow-up",
+  "description": "An example: four levels, then a second question only when the answer is the worst one. Edit the labels or delete this.",
+  "questions": [
+    {
+      "id": "severity",
+      "prompt": "How severe is this step?",
+      "labels": ["Informational", "Warning", "Error", "Critical"]
+    },
+    {
+      "id": "failure",
+      "prompt": "What kind of failure?",
+      "labels": ["Task decomposition", "Answered alone", "Wrong worker chosen",
+                 "Bad sub-question", "Ignored the evidence", "Poor reasoning"],
+      "ask_if": {"question": "severity", "equals": "Critical"}
+    }
+  ]
+}

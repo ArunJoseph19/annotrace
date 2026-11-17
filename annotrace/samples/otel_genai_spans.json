@@ -1,0 +1,53 @@
+{
+  "resourceSpans": [{
+    "resource": {"attributes": [{"key": "service.name", "value": {"stringValue": "research-agent"}}]},
+    "scopeSpans": [{
+      "scope": {"name": "opentelemetry.instrumentation.openai"},
+      "spans": [
+        {"traceId": "5b8aa5a2d2c872e8321cf37308d69df2", "spanId": "051581bf3cb55c13",
+         "parentSpanId": "", "name": "invoke_agent research-agent",
+         "startTimeUnixNano": "1789038242113000000", "endTimeUnixNano": "1789038248500000000",
+         "attributes": [
+           {"key": "gen_ai.operation.name", "value": {"stringValue": "invoke_agent"}},
+           {"key": "gen_ai.provider.name", "value": {"stringValue": "openai"}},
+           {"key": "gen_ai.agent.name", "value": {"stringValue": "research-agent"}}
+         ], "status": {"code": "STATUS_CODE_OK"}},
+
+        {"traceId": "5b8aa5a2d2c872e8321cf37308d69df2", "spanId": "1a2b3c4d5e6f7081",
+         "parentSpanId": "051581bf3cb55c13", "name": "chat gpt-4o",
+         "startTimeUnixNano": "1789038242200000000", "endTimeUnixNano": "1789038243900000000",
+         "attributes": [
+           {"key": "gen_ai.operation.name", "value": {"stringValue": "chat"}},
+           {"key": "gen_ai.provider.name", "value": {"stringValue": "openai"}},
+           {"key": "gen_ai.request.model", "value": {"stringValue": "gpt-4o"}},
+           {"key": "gen_ai.response.model", "value": {"stringValue": "gpt-4o-2024-08-06"}},
+           {"key": "gen_ai.usage.input_tokens", "value": {"intValue": "412"}},
+           {"key": "gen_ai.usage.output_tokens", "value": {"intValue": "38"}},
+           {"key": "gen_ai.input.messages", "value": {"stringValue": "[{\"role\":\"user\",\"parts\":[{\"type\":\"text\",\"content\":\"Which university did the author of Dune attend?\"}]}]"}},
+           {"key": "gen_ai.output.messages", "value": {"stringValue": "[{\"role\":\"assistant\",\"parts\":[{\"type\":\"text\",\"content\":\"I should find the author of Dune first.\"}]}]"}}
+         ], "status": {"code": "STATUS_CODE_OK"}},
+
+        {"traceId": "5b8aa5a2d2c872e8321cf37308d69df2", "spanId": "2b3c4d5e6f708192",
+         "parentSpanId": "051581bf3cb55c13", "name": "execute_tool web_search",
+         "startTimeUnixNano": "1789038244050000000", "endTimeUnixNano": "1789038244980000000",
+         "attributes": [
+           {"key": "gen_ai.operation.name", "value": {"stringValue": "execute_tool"}},
+           {"key": "gen_ai.tool.name", "value": {"stringValue": "web_search"}},
+           {"key": "gen_ai.tool.call.id", "value": {"stringValue": "call_a1"}},
+           {"key": "gen_ai.tool.call.arguments", "value": {"stringValue": "{\"q\":\"author of Dune\"}"}},
+           {"key": "gen_ai.tool.call.result", "value": {"stringValue": "Dune was written by Frank Herbert."}}
+         ], "status": {"code": "STATUS_CODE_OK"}},
+
+        {"traceId": "5b8aa5a2d2c872e8321cf37308d69df2", "spanId": "3c4d5e6f708192a3",
+         "parentSpanId": "051581bf3cb55c13", "name": "execute_tool web_search",
+         "startTimeUnixNano": "1789038245100000000", "endTimeUnixNano": "1789038246200000000",
+         "attributes": [
+           {"key": "gen_ai.operation.name", "value": {"stringValue": "execute_tool"}},
+           {"key": "gen_ai.tool.name", "value": {"stringValue": "web_search"}},
+           {"key": "gen_ai.tool.call.arguments", "value": {"stringValue": "{\"q\":\"Frank Herbert university\"}"}},
+           {"key": "gen_ai.tool.call.result", "value": {"stringValue": "Frank Herbert attended the University of Washington."}}
+         ], "status": {"code": "STATUS_CODE_ERROR", "message": "retried once"}}
+      ]
+    }]
+  }]
+}

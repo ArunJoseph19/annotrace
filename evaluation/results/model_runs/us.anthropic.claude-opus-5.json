@@ -1,0 +1,2798 @@
+{
+ "model": "us.anthropic.claude-opus-5",
+ "schema": {
+  "id": "severity",
+  "name": "Severity",
+  "description": "",
+  "ask_reason": true,
+  "questions": [
+   {
+    "id": "severity",
+    "prompt": "Did this step cause or contribute to the run's failure?",
+    "labels": [
+     "Informational",
+     "Warning",
+     "Error",
+     "Critical"
+    ],
+    "applies_to": [
+     "decision",
+     "cycle",
+     "output"
+    ],
+    "ask_if": null
+   },
+   {
+    "id": "critical_type",
+    "prompt": "Which kind of critical failure?",
+    "labels": [
+     "Centralized Agent \u2014 Task decomposition",
+     "Centralized Agent \u2014 Subtask Generation",
+     "Centralized Agent \u2014 Expert Assignment",
+     "Centralized Agent \u2014 Response Process",
+     "Expert Agent \u2014 reasoning",
+     "Expert Agent \u2014 interaction",
+     "Expert Agent \u2014 communication"
+    ],
+    "applies_to": [
+     "decision",
+     "cycle",
+     "output"
+    ],
+    "ask_if": {
+     "question": "severity",
+     "equals": "Critical"
+    }
+   }
+  ]
+ },
+ "system_prompt": "You are helping a human annotator. Answer the questions below about each step of an agent run.\n\n## Questions\n\n- **severity**: Did this step cause or contribute to the run's failure? (only on steps of kind: decision, cycle, output)\n    one of: Informational, Warning, Error, Critical\n- **critical_type**: Which kind of critical failure? (only on steps of kind: decision, cycle, output) -- only when severity is Critical\n    one of: Centralized Agent \u2014 Task decomposition, Centralized Agent \u2014 Subtask Generation, Centralized Agent \u2014 Expert Assignment, Centralized Agent \u2014 Response Process, Expert Agent \u2014 reasoning, Expert Agent \u2014 interaction, Expert Agent \u2014 communication\n\nAlso give a short reason for every step.\n\n## Output\n\nReply with JSON only, no commentary:\n\n```json\n{\n  \"steps\": {\n    \"<step key>\": {\n      \"severity\": \"Informational\",\n      \"critical_type\": \"Centralized Agent \\u2014 Task decomposition\",\n      \"reason\": \"one short sentence\"\n    }\n  }\n}\n```\n\nUse the step keys exactly as given. Leave a question out when it does not apply, rather than inventing a value.\n\n## Extra guidance\n\n# Annotation Handbook\n**Multi-agent LLM failure attribution** \u00b7 prompt v7\n\n***\n\n## The Four Labels\n\n| Label | When to use |\n|---|---|\n| **Critical** | Root cause of the final failure. Fixing only this step would likely fix the output. Every failed trajectory must have at least one. Always include a sub-type. |\n| **Error** | Contributes to failure but is not the root cause. Often downstream propagation of a Critical step. Fixing alone may be insufficient. |\n| **Warning** | Redundant or wasteful action \u2014 3rd+ repeated search, extra coordinator round, slightly imprecise answer. No new failure introduced. |\n| **Informational** | Correct and necessary. Should remain unchanged during optimisation. A step can be decisive for success and still be Informational. |\n\n> **Key distinction:** \"Critical\" means critical *error*, never critical *importance*. A correct step, even a decisive one, is always Informational.\n\n***\n\n## Step Definition\n\nEach step bundles **thinking, action, and response** together as one unit and receives a **single label**. However, the reasoning field should specify *which part* within the step caused the issue \u2014 for example:\n\n- \"Thinking was correct (intended to find Director A), but the search query was too broad and returned irrelevant documents.\"\n- \"Search query was well-formed, but retrieved documents were noisy and misled the subsequent reasoning.\"\n\nThis distinction matters for downstream analysis even though the label applies to the whole step. It is the standard definition used across prior work and allows annotations to generalise across different benchmarks and agent architectures.\n\n> **Note on misalignment within a step:** In some cases thinking is correct but the action is wrong (e.g. poor query formulation), or the action happens to be correct despite wrong reasoning. Label the step based on its contribution to the final failure, and explain the internal misalignment in the reasoning field. A step where reasoning is wrong but the action accidentally succeeds is still a risk \u2014 label it at least Warning if relevant.\n\n***\n\n## Decision Flowchart\n\n**Step 0 \u2014 Check the step type first**\n- `think` \u2192 apply Think Step Rules below\n- `answer` / `final_answer` \u2192 label on output quality only; Warning due to search count is forbidden\n- `search_and_info` \u2192 repeated-query rules apply; also apply Restart Rule\n- `coordinator_thinking` / `expert_call` \u2192 continue to Step 1\n\n**Step 1 \u2014 Did something go wrong?**\n- No \u2192 **Informational** (if necessary) or **Warning** (if redundant)\n- Yes \u2192 Step 2\n\n**Step 2 \u2014 Is this the root cause? Would fixing only this step likely fix the final output?**\n- Yes \u2192 **Critical** + sub-type\n- No \u2192 Step 3\n\n**Step 3 \u2014 Did it contribute to the final failure?**\n- Yes \u2192 **Error**\n- No \u2192 **Warning** (wrong but inconsequential)\n\n> **Pro tip:** Work backwards. Read the final answer first, confirm it's wrong, then trace back to find the earliest step where something went wrong \u2014 that's your Critical.\n\n***\n\n## Error Propagation\n\nWhen a Critical step introduces a wrong assumption or wrong result, subsequent steps that follow from that mistake are **Error** (propagation), not Critical. Only assign a second Critical if a **genuinely new and independent failure** is introduced \u2014 not merely a consequence of the first.\n\n```\nExample \u2014 sequential dependency:\n  Step 1  coordinator assigns wrong sub-task          \u2192  Critical (root cause)\n  Step 2  expert follows the wrong sub-task           \u2192  Error    (propagation)\n  Step 3  coordinator uses wrong expert output        \u2192  Error    (propagation)\n  Step 4  final answer built on wrong info            \u2192  Error    (propagation)\n```\n\n> One root Critical, multiple downstream Errors. The cascade rule applies: do not promote a propagated failure to Critical just because it feels significant.\n\n***\n\n## Restart Rule\n\nWhen an agent **retries** a failed approach (e.g. re-issues a search query after getting no useful results), annotate as follows:\n\n| Attempt | Label | Reason |\n|---|---|---|\n| All attempts except the last | **Warning** | Abandoned \u2014 result not used in the final output |\n| The final attempt | **Critical** or **Error** | Its result feeds into the failure |\n\nThe last attempt is Critical if its output is the direct root cause of the wrong final answer. It is Error if a prior Critical introduced the root failure and this attempt merely propagated it.\n\n```\nExample (agent retries a search three times, uses result of 3rd attempt):\n  Search attempt 1  \u2192  Warning   (abandoned)\n  Search attempt 2  \u2192  Warning   (abandoned)\n  Search attempt 3  \u2192  Critical  (result used; wrong documents caused wrong answer)\n```\n\n> **Exception:** If a prior attempt returned misleading documents that the agent *carried forward* into later reasoning (rather than discarding), that attempt may be **Error** or **Critical** rather than Warning \u2014 because it did contribute to the failure.\n\n> **Reconciliation with Search & Info Rules:** The Restart Rule takes precedence when the agent is clearly cycling through attempts and using only the final result. The Search & Info table (Error \u00d7 2, then Warning) applies to cases where no clear \"restart\" pattern is identifiable and all attempts equally feed into the failure.\n\n***\n\n## Search & Info Rules\n\n| Occurrence | Label |\n|---|---|\n| 1st search returns irrelevant docs | **Error** |\n| 2nd search \u2014 identical query, no strategy change | **Error** |\n| 3rd+ search \u2014 same query repeated | **Warning** (pure waste) |\n| Repeated search returns noisy/misleading docs causing wrong answer | **Error** or **Critical** (not Warning) |\n| Repeated query that looks \"correct\" | Still **Warning** \u2014 repetition count alone determines this |\n\n> **Note:** When the agent only uses the final search result to form its answer (standard LLM behaviour), apply the **Restart Rule** instead \u2014 prior attempts become Warning and the final attempt becomes Critical or Error.\n\n***\n\n## Think Step Rules\n\n- **Rule A** \u2014 Almost never Warning. Thinking wastes no external resource. The search that follows may be Warning, but the thought is not.\n- **Rule B** \u2014 Label on reasoning content, not on adjacent searches.\n- **Rule C** \u2014 When in doubt, default to **Informational**. If the reasoning is not demonstrably wrong, it's Informational.\n- **Rule D** \u2014 Think steps inside a Warning search loop are **Informational**. The Warning belongs on the `search_and_info` step, not the `think` step between them.\n\n```\nPattern in a repeated-search loop:\n  [sN]   (search_and_info)  same query          \u2192  Warning       (wasteful action)\n  [sN+1] (think)            \"I'll try again\"    \u2192  Informational (reasoning is fine)\n  [sN+2] (search_and_info)  same query          \u2192  Warning       (wasteful action)\n  [sN+3] (think)            \"Still no results\"  \u2192  Informational (correct interpretation)\n```\n\n***\n\n## Coordinator Rules\n\n### Mid-trajectory transitions\n| Situation | Label |\n|---|---|\n| Correct sub-task framing and assignment | **Informational** |\n| Wrong sub-task or wrong expert \u2014 introduces new failure | **Critical** (Task decomposition or Expert Assignment) |\n| Extra round caused by prior expert failure | **Warning** (wasteful overhead, not a new error) |\n\n### Final answer / final coordinator step\n| Situation | Label |\n|---|---|\n| Had enough correct info from experts but still produced wrong answer | **Critical** (Response Process) |\n| Introduced a new incorrect factor not in any expert output | **Critical** (Response Process) |\n| Merely propagated a prior expert error without adding a new mistake | **Error** |\n\n### Cascade failures\nOnly one step is the root Critical. When a coordinator introduces a false framing, everything downstream that follows it is Error, not Critical. Only assign a second Critical if a genuinely new and independent failure is introduced.\n\n***\n\n## Sequential vs Parallel Chains\n\n**Sequential** (each expert call depends on the previous):\n- An error early propagates to all downstream steps\n- Downstream steps following the wrong assumption \u2192 **Error**\n- Typically one Critical (root) + multiple Errors (propagation)\n\n**Parallel** (coordinator dispatches independent sub-questions):\n- An error in expert A does not affect expert B's independent branch\n- Expert B's steps can be **Informational** even in a failed trajectory\n- Evaluate each branch independently\n- **Multiple Criticals in parallel branches:** If two independent sub-tasks each retrieve a wrong answer, and the final answer fails because of both, both are Critical. The test is: \"Would fixing only this step have fixed the final output?\" If each sub-task is independently necessary, each failure is independently Critical.\n\n```\nExample \u2014 parallel branches, both fail:\n  Expert A retrieves wrong director name    \u2192  Critical (Expert Agent \u2014 interaction)\n  Expert B retrieves wrong birth date       \u2192  Critical (Expert Agent \u2014 interaction)\n  Coordinator combines both wrong answers  \u2192  Error    (propagation)\n```\n\n***\n\n## Self-Correction and Local Correctness\n\nWhen an agent notices a mistake mid-trajectory and attempts to self-correct, the correction may be:\n\n- **Globally correct** \u2014 fixes the actual error and leads toward the right answer \u2192 label the correction step **Informational**\n- **Locally correct but globally wrong** \u2014 the reasoning appears valid in isolation but pursues the wrong direction (e.g. rechecks a sub-answer that was wrong, but reconfirms the wrong value) \u2192 label as **Error** propagation, not Informational\n\n> **Key test:** Is the self-correction working toward the correct final answer, or just internally consistent within a wrong framing? If the latter, it is still a failure step.\n\n***\n\n## Precision Failures\n\nWhen the answer is factually reasonable but too coarse (e.g. \"Mongolia\" instead of \"Khamag Mongol\", \"Wilhelm R\u00f6ntgen\" instead of full name):\n- `answer` and `final_answer` \u2192 **Warning**\n- Upstream reasoning that was logically correct \u2192 **Informational**\n- Do not label the coordinator's correct identification as Critical\n\n***\n\n## Common Pitfalls\n\n| Wrong | Right |\n|---|---|\n| Labelling a correct coordinator step Critical because it was \"important\" to success | Correct + necessary = Informational, always |\n| Labelling think steps Warning because nearby searches are Warning | Think steps in Warning loops are Informational |\n| Multiple Critical labels in a single cascade | One root Critical \u2014 everything downstream following the same mistake \u2192 Error |\n| Labelling a precision failure (too coarse, not wrong) as Error or Critical | Precision failures \u2192 Warning throughout; upstream reasoning \u2192 Informational |\n| Labelling an `answer` step Warning because nearby searches were repeated | Answer steps are never Warning due to search count |\n| Labelling all retry attempts as Critical or Error | Only the final attempt is Critical/Error; prior abandoned attempts are Warning |\n| Labelling a propagated downstream step as Critical | Error propagation \u2260 new Critical; ask whether a genuinely new failure was introduced |\n| Treating a self-correction as Informational when it stays within a wrong framing | Locally correct \u2260 globally correct; test against the final answer direction |\n\n***\n\n## AI Annotation Support\n\nThe built-in AI label suggester (Groq/LLM) operates on documents retrieved within the trajectory. It does **not** have access to external knowledge and may therefore:\n- Fail to detect hallucinations in coordinator thinking (e.g. false Doctor Who framing)\n- Confirm wrong answers that are not contradicted by the retrieved docs\n\n**Workaround:** For knowledge-intensive questions where the trajectory's retrieval clearly failed, verify the golden answer via a manual web search before finalising labels. This is especially important for questions about obscure facts, proper names, or niche cultural knowledge where the agent and the AI suggester may share the same blind spot.\n\n> This limitation will be addressed in a future version by equipping the AI suggester with search capabilities.\n\n***\n\n## Critical Sub-types Reference\n\nEvery Critical label must include one of these sub-types in parentheses.\n\n**Coordinator-level** (`coordinator_thinking`, `expert_call`, `final_answer`):\n- `Centralized Agent \u2014 Task decomposition`\n- `Centralized Agent \u2014 Subtask Generation`\n- `Centralized Agent \u2014 Expert Assignment`\n- `Centralized Agent \u2014 Response Process`\n\n**Expert-level** (`think`, `search_and_info`, `answer`):\n- `Expert Agent \u2014 reasoning`\n- `Expert Agent \u2014 interaction`\n- `Expert Agent \u2014 communication`\n\n**Example format:**\n```\ncoord_r1: Critical (Centralized Agent \u2014 Task decomposition) | Hallucinated Doctor Who framing not present in the question.\n```\n\n***\n\n*For internal use \u2014 annotation team \u00b7 prompt v7 \u00b7 who&when benchmark*\n\nAnswer severity with the bare label only. When it is Critical, give the sub-type in critical_type, not inside the severity value.",
+ "runs": {
+  "0": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Reasoning identified the task correctly but the first sub-question ('notable American character actors') was too vague and unproductive, wasting a round; the direct KWPW ownership query should have come first."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search on the vague prompt returned generic 'character actor' definition docs with no usable names; wasteful first attempt."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Near-identical query repeated with no strategy change, returning the same irrelevant docs."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of the same query, pure waste."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth identical search and then an ungrounded answer ('Charlie Chaplin') not supported by retrieved docs; discarded by the coordinator so no impact on final output."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Correctly rejected Charlie Chaplin but re-issued essentially the same unproductive sub-question, adding another wasted round."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Same query again, same irrelevant documents."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical repeated query, no new information."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated query a third time in this cycle; waste of retrieval budget."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repetition and an unsupported answer ('Marlon Brando'); abandoned by the coordinator."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Pivots to the decisive sub-question about KWPW's owner and assigns it appropriately (minor stray mention of Jack Nicholson is harmless)."
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Well-formed query retrieved the KWPW article explicitly naming Bill McCutcheon as owner."
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly extracted and reported the owner's name from the retrieved document."
+    },
+    "coord_r4": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Sensible verification step checking whether a character actor shares the name Bill McCutcheon."
+    },
+    "expert_ci3_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search returned completely unrelated docs (bamboo, gunfighting); no useful verification obtained."
+    },
+    "expert_ci3_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Second attempt also returned irrelevant McCutcheon entries; verification still unsupported."
+    },
+    "expert_ci3_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Answered 'yes' based on an unrelated 'software engineer' document \u2014 reasoning is invalid though the conclusion happens to be true, so no harm to the final answer."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly outputs Bill McCutcheon, matching the expected answer."
+    }
+   },
+   "usage": {
+    "inputTokens": 12280,
+    "outputTokens": 1801,
+    "totalTokens": 14081,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 22.88,
+   "expected": 18,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Reasoning identified the task correctly but the first sub-question ('notable American character actors') was too vague and unproductive, wasting a round; the direct KWPW ownership query should have come first.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Search on the vague prompt returned generic 'character actor' definition docs with no usable names; wasteful first attempt.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Near-identical query repeated with no strategy change, returning the same irrelevant docs.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third repetition of the same query, pure waste.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth identical search and then an ungrounded answer ('Charlie Chaplin') not supported by retrieved docs; discarded by the coordinator so no impact on final output.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Correctly rejected Charlie Chaplin but re-issued essentially the same unproductive sub-question, adding another wasted round.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Same query again, same irrelevant documents.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical repeated query, no new information.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated query a third time in this cycle; waste of retrieval budget.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth repetition and an unsupported answer ('Marlon Brando'); abandoned by the coordinator.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Pivots to the decisive sub-question about KWPW's owner and assigns it appropriately (minor stray mention of Jack Nicholson is harmless).\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Well-formed query retrieved the KWPW article explicitly naming Bill McCutcheon as owner.\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly extracted and reported the owner's name from the retrieved document.\"\n    },\n    \"coord_r4\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Sensible verification step checking whether a character actor shares the name Bill McCutcheon.\"\n    },\n    \"expert_ci3_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Search returned completely unrelated docs (bamboo, gunfighting); no useful verification obtained.\"\n    },\n    \"expert_ci3_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Second attempt also returned irrelevant McCutcheon entries; verification still unsupported.\"\n    },\n    \"expert_ci3_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Answered 'yes' based on an unrelated 'software engineer' document \u2014 reasoning is invalid though the conclusion happens to be true, so no harm to the final answer.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly outputs Bill McCutcheon, matching the expected answer.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "1": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly decomposes the question into identifying the Curcio student and then their lineage, and assigns a plausible expert."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Overly long combined query returned irrelevant docs (botanical garden, Brazilian writer); attempt abandoned without useful contribution."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Refined query to 'classical pianist taught by Maria Curcio' and surfaced the Sebasti\u00e1n Colombo reference used for the answer."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Essentially the same query repeated, returning the identical documents \u2014 wasteful with no new information."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Redundant repeat of the first query, but the step correctly outputs the right student name, Sebasti\u00e1n Colombo."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly recognizes the lineage is still missing and dispatches a focused follow-up sub-question."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Search retrieves Argentine Colombo-related documents that support the eventual Argentine lineage answer."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query with no strategy change, returning the same documents \u2014 pure redundancy."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query, no new evidence gained; wasteful repetition."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Near-identical query but this final attempt delivers the correct 'Argentine' answer."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly reports 'Argentine', matching the expected answer."
+    }
+   },
+   "usage": {
+    "inputTokens": 11299,
+    "outputTokens": 1339,
+    "totalTokens": 12638,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 17.07,
+   "expected": 11,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly decomposes the question into identifying the Curcio student and then their lineage, and assigns a plausible expert.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Overly long combined query returned irrelevant docs (botanical garden, Brazilian writer); attempt abandoned without useful contribution.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Refined query to 'classical pianist taught by Maria Curcio' and surfaced the Sebasti\u00e1n Colombo reference used for the answer.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Essentially the same query repeated, returning the identical documents \u2014 wasteful with no new information.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Redundant repeat of the first query, but the step correctly outputs the right student name, Sebasti\u00e1n Colombo.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly recognizes the lineage is still missing and dispatches a focused follow-up sub-question.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Search retrieves Argentine Colombo-related documents that support the eventual Argentine lineage answer.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query with no strategy change, returning the same documents \u2014 pure redundancy.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query, no new evidence gained; wasteful repetition.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Near-identical query but this final attempt delivers the correct 'Argentine' answer.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly reports 'Argentine', matching the expected answer.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "2": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Hallucinated that Mick Carter is a Doctor Who character and framed the subtask around 'The Time of the Doctor', derailing the whole run."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Searched with the false Doctor Who framing and ignored the retrieved docs that correctly identified Mick Carter as the EastEnders landlord of The Queen Victoria."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated essentially the same wrong-framing query without adapting to the EastEnders evidence already retrieved."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query with no strategy change \u2014 pure waste."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated again, no new information gained."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated again, wasted iteration."
+    },
+    "expert_ci0_cycle5": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated again, wasted iteration."
+    },
+    "expert_ci0_cycle6": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated again, wasted iteration."
+    },
+    "expert_ci0_cycle7": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated again, wasted iteration."
+    },
+    "expert_ci0_cycle8": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated again, wasted iteration."
+    },
+    "expert_ci0_cycle9": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Final identical query exhausting iterations; result unused and no new failure introduced beyond the initial framing."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Concluded no address exists, still inside the hallucinated Doctor Who framing and ignoring the EastEnders evidence returned by the expert."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Propagates the false framing and asserts no address exists instead of 46 Albert Square, Walford."
+    }
+   },
+   "usage": {
+    "inputTokens": 12219,
+    "outputTokens": 1159,
+    "totalTokens": 13378,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 14.33,
+   "expected": 13,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Hallucinated that Mick Carter is a Doctor Who character and framed the subtask around 'The Time of the Doctor', derailing the whole run.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Searched with the false Doctor Who framing and ignored the retrieved docs that correctly identified Mick Carter as the EastEnders landlord of The Queen Victoria.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated essentially the same wrong-framing query without adapting to the EastEnders evidence already retrieved.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query with no strategy change \u2014 pure waste.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated again, no new information gained.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated again, wasted iteration.\"\n    },\n    \"expert_ci0_cycle5\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated again, wasted iteration.\"\n    },\n    \"expert_ci0_cycle6\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated again, wasted iteration.\"\n    },\n    \"expert_ci0_cycle7\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated again, wasted iteration.\"\n    },\n    \"expert_ci0_cycle8\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated again, wasted iteration.\"\n    },\n    \"expert_ci0_cycle9\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Final identical query exhausting iterations; result unused and no new failure introduced beyond the initial framing.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Concluded no address exists, still inside the hallucinated Doctor Who framing and ignoring the EastEnders evidence returned by the expert.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Propagates the false framing and asserts no address exists instead of 46 Albert Square, Walford.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "3": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Wrongly assumed Tem\u00fcge's father was Genghis Khan (actually Yes\u00fcgei, his brother was Genghis Khan), reframing the task into the wrong sub-question and dooming the answer."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "First search on the already-wrong sub-question returned noisy docs about \u00d6gedei; attempt abandoned and retried."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Repeated search returned the same misleading 'Khan died in Mongolia' passage (about \u00d6gedei), which was carried into the answer \u2014 propagation of the coordinator's wrong framing."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Answers 'Mongolia' from a misread document, propagating the wrong framing and imprecise retrieval."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator merely relays the expert's wrong answer without adding a new mistake."
+    }
+   },
+   "usage": {
+    "inputTokens": 6567,
+    "outputTokens": 848,
+    "totalTokens": 7415,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 12.22,
+   "expected": 5,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Wrongly assumed Tem\u00fcge's father was Genghis Khan (actually Yes\u00fcgei, his brother was Genghis Khan), reframing the task into the wrong sub-question and dooming the answer.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"First search on the already-wrong sub-question returned noisy docs about \u00d6gedei; attempt abandoned and retried.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"Repeated search returned the same misleading 'Khan died in Mongolia' passage (about \u00d6gedei), which was carried into the answer \u2014 propagation of the coordinator's wrong framing.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Answers 'Mongolia' from a misread document, propagating the wrong framing and imprecise retrieval.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Coordinator merely relays the expert's wrong answer without adding a new mistake.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "4": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly framed the sub-question and delegated it appropriately; reasoning already identified Miami correctly."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Reasonable first search attempt; retrieved docs were off-topic but the attempt itself was necessary."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with no strategy change, returning the same irrelevant docs \u2014 wasteful."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of the same query and same useless results; pure waste."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Another identical search with no query reformulation; redundant effort."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Same query repeated again, adding no new information."
+    },
+    "expert_ci0_cycle5": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Continued looping on the identical unproductive search."
+    },
+    "expert_ci0_cycle6": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Final loop iteration; answer 'Miami' came from parametric knowledge, so the repeated search was wasted effort but not harmful."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Final answer 'Miami' matches the expected answer."
+    }
+   },
+   "usage": {
+    "inputTokens": 9943,
+    "outputTokens": 915,
+    "totalTokens": 10858,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 13.76,
+   "expected": 9,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly framed the sub-question and delegated it appropriately; reasoning already identified Miami correctly.\"\n    },\n    \"expert_r1\": {\n      \"reason\": \"Expert reply 'Miami' is the correct answer passed back to the coordinator.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Reasonable first search attempt; retrieved docs were off-topic but the attempt itself was necessary.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with no strategy change, returning the same irrelevant docs \u2014 wasteful.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third repetition of the same query and same useless results; pure waste.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Another identical search with no query reformulation; redundant effort.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Same query repeated again, adding no new information.\"\n    },\n    \"expert_ci0_cycle5\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Continued looping on the identical unproductive search.\"\n    },\n    \"expert_ci0_cycle6\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Final loop iteration; answer 'Miami' came from parametric knowledge, so the repeated search was wasted effort but not harmful.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Final answer 'Miami' matches the expected answer.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "5": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct decomposition: asks for the date of the Battle of Manila first."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Reasonable first search for 'Battle of Manila', though the corpus returned irrelevant film documents."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with no strategy change; pure waste."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical search, no new information retrieved."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth identical search; redundant resource use."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fifth identical search; still no query reformulation."
+    },
+    "expert_ci0_cycle5": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Sixth identical search is wasteful, though the final answer (1945) was correctly supplied from parametric knowledge."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly proceeds to request the Battle of Guam date for comparison."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Appropriate first search for 'Battle of Guam'; retrieval was noisy but attempt was sound."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated without adaptation."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical search; wasteful repetition."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth identical search with no new documents."
+    },
+    "expert_ci1_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fifth identical search is redundant, though the returned date (Dec 10, 1941) was correct from prior knowledge."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct chronological comparison concluding Guam preceded Manila."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Final answer 'the Battle of Guam' matches the expected answer."
+    }
+   },
+   "usage": {
+    "inputTokens": 12202,
+    "outputTokens": 1274,
+    "totalTokens": 13476,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 16.45,
+   "expected": 15,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correct decomposition: asks for the date of the Battle of Manila first.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Reasonable first search for 'Battle of Manila', though the corpus returned irrelevant film documents.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with no strategy change; pure waste.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical search, no new information retrieved.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth identical search; redundant resource use.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fifth identical search; still no query reformulation.\"\n    },\n    \"expert_ci0_cycle5\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Sixth identical search is wasteful, though the final answer (1945) was correctly supplied from parametric knowledge.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly proceeds to request the Battle of Guam date for comparison.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Appropriate first search for 'Battle of Guam'; retrieval was noisy but attempt was sound.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated without adaptation.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical search; wasteful repetition.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth identical search with no new documents.\"\n    },\n    \"expert_ci1_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fifth identical search is redundant, though the returned date (Dec 10, 1941) was correct from prior knowledge.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correct chronological comparison concluding Guam preceded Manila.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Final answer 'the Battle of Guam' matches the expected answer.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "6": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator arbitrarily reframed the ambiguous 'Arthur' as the animated TV series instead of the 1981 film, sending the expert after the wrong entity."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "First search on the wrong framing returned irrelevant docs and was abandoned/retried without strategy change."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Near-identical query repeated, same irrelevant docs, result discarded."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Final attempt reused the same failing query and, with no supporting evidence, hallucinated 'Marc Lawrence', propagating the coordinator's wrong framing into the answer."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Coordinator passed through the unsupported expert answer without sanity-checking, propagating the earlier failure."
+    }
+   },
+   "usage": {
+    "inputTokens": 6839,
+    "outputTokens": 933,
+    "totalTokens": 7772,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 12.21,
+   "expected": 5,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Coordinator arbitrarily reframed the ambiguous 'Arthur' as the animated TV series instead of the 1981 film, sending the expert after the wrong entity.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"First search on the wrong framing returned irrelevant docs and was abandoned/retried without strategy change.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Near-identical query repeated, same irrelevant docs, result discarded.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"Final attempt reused the same failing query and, with no supporting evidence, hallucinated 'Marc Lawrence', propagating the coordinator's wrong framing into the answer.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Coordinator passed through the unsupported expert answer without sanity-checking, propagating the earlier failure.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "7": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct decomposition: identify each film's director then compare birth dates."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "First search for 'Sabar Upare Maa' returned completely irrelevant documents, starting the retrieval failure."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeats essentially the same query with no strategy change, again retrieving irrelevant docs."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query, pure waste; this expert call was abandoned with a 400 error."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth identical query, abandoned attempt that produced no usable result."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Reasonable pivot to the other film after the expert call errored out."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search for Badhti Ka Naam Dadhi director returned irrelevant charity docs; attempt abandoned and retried."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated near-identical query with no new information; abandoned."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query, pure waste."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final attempt yields no supporting evidence yet the expert fabricates 'Manish Pandey' as director, injecting a false fact."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Accepts the unverified/hallucinated director name and plans around it, though this is not the cause of the final give-up."
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search on the fabricated name returns Manoj Kumar Pandey docs; attempt abandoned."
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Same query repeated, same irrelevant docs."
+    },
+    "expert_ci2_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query, wasted effort."
+    },
+    "expert_ci2_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Answers '1982' with no supporting document, propagating and compounding the earlier hallucination."
+    },
+    "coord_r4": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly returns to the still-missing Sabar Upare Maa director sub-task."
+    },
+    "expert_ci3_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Re-runs the previously failed query; attempt abandoned."
+    },
+    "expert_ci3_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Same query reformulation already shown to fail; no strategy change."
+    },
+    "expert_ci3_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query, pure waste."
+    },
+    "expert_ci3_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Final attempt on the decisive sub-task never varies the query (e.g. Bengali title/alternate spelling) and returns no answer at all, directly causing the 'insufficient information' outcome."
+    },
+    "coord_r5": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Abandons the task after the expert's retrieval failure instead of re-framing the sub-query; propagates the root failure."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Outputs 'Insufficient information' instead of the expected film, propagating the failed retrieval rather than introducing a new mistake."
+    }
+   },
+   "usage": {
+    "inputTokens": 25473,
+    "outputTokens": 2849,
+    "totalTokens": 28322,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 35.74,
+   "expected": 22,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correct decomposition: identify each film's director then compare birth dates.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"First search for 'Sabar Upare Maa' returned completely irrelevant documents, starting the retrieval failure.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeats essentially the same query with no strategy change, again retrieving irrelevant docs.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query, pure waste; this expert call was abandoned with a 400 error.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth identical query, abandoned attempt that produced no usable result.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Reasonable pivot to the other film after the expert call errored out.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Search for Badhti Ka Naam Dadhi director returned irrelevant charity docs; attempt abandoned and retried.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated near-identical query with no new information; abandoned.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query, pure waste.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Final attempt yields no supporting evidence yet the expert fabricates 'Manish Pandey' as director, injecting a false fact.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Accepts the unverified/hallucinated director name and plans around it, though this is not the cause of the final give-up.\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Search on the fabricated name returns Manoj Kumar Pandey docs; attempt abandoned.\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Same query repeated, same irrelevant docs.\"\n    },\n    \"expert_ci2_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query, wasted effort.\"\n    },\n    \"expert_ci2_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Answers '1982' with no supporting document, propagating and compounding the earlier hallucination.\"\n    },\n    \"coord_r4\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly returns to the still-missing Sabar Upare Maa director sub-task.\"\n    },\n    \"expert_ci3_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Re-runs the previously failed query; attempt abandoned.\"\n    },\n    \"expert_ci3_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Same query reformulation already shown to fail; no strategy change.\"\n    },\n    \"expert_ci3_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query, pure waste.\"\n    },\n    \"expert_ci3_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"Final attempt on the decisive sub-task never varies the query (e.g. Bengali title/alternate spelling) and returns no answer at all, directly causing the 'insufficient information' outcome.\"\n    },\n    \"coord_r5\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Abandons the task after the expert's retrieval failure instead of re-framing the sub-query; propagates the root failure.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Outputs 'Insufficient information' instead of the expected film, propagating the failed retrieval rather than introducing a new mistake.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "8": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly framed the question and delegated to an appropriate expert; its prior reasoning about Shia Islam aligns with the right answer."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Reasoning was sound but the query retrieved irrelevant 'Taleb' documents, yielding no usable evidence."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Near-identical query repeated with no strategy change, returning the same irrelevant docs \u2014 wasted retrieval."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query, pure repetition with no new information."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth identical query is wasteful, though the expert ultimately answered correctly from parametric knowledge rather than the noisy docs."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Final answer 'Shia Islam' matches the expected answer."
+    }
+   },
+   "usage": {
+    "inputTokens": 8100,
+    "outputTokens": 790,
+    "totalTokens": 8890,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 11.03,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly framed the question and delegated to an appropriate expert; its prior reasoning about Shia Islam aligns with the right answer.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Reasoning was sound but the query retrieved irrelevant 'Taleb' documents, yielding no usable evidence.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Near-identical query repeated with no strategy change, returning the same irrelevant docs \u2014 wasted retrieval.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query, pure repetition with no new information.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth identical query is wasteful, though the expert ultimately answered correctly from parametric knowledge rather than the noisy docs.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Final answer 'Shia Islam' matches the expected answer.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "9": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Reasonable decomposition: identify what 'Five Years' is before finding its composer."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Overly broad query 'Five Years' returned irrelevant education docs; attempt abandoned."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Vague repeated query retrieved useless docs; attempt abandoned."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with no strategy change, pure waste."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Despite no supporting evidence, the expert hallucinated that 'Five Years' is a Pink Floyd song (it is David Bowie's), setting the entire wrong direction."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Accepted the unsupported Pink Floyd framing without verification and propagated it into the next sub-task."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search on the false premise returned irrelevant docs; attempt abandoned."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with no strategy change."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query, pure waste."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final attempt still had no evidence yet asserted 'Roger Waters', propagating the earlier hallucination."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator output merely propagates the fabricated Pink Floyd/Roger Waters chain instead of David Bowie."
+    }
+   },
+   "usage": {
+    "inputTokens": 9993,
+    "outputTokens": 1057,
+    "totalTokens": 11050,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 15.5,
+   "expected": 11,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Reasonable decomposition: identify what 'Five Years' is before finding its composer.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Overly broad query 'Five Years' returned irrelevant education docs; attempt abandoned.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Vague repeated query retrieved useless docs; attempt abandoned.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with no strategy change, pure waste.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"Despite no supporting evidence, the expert hallucinated that 'Five Years' is a Pink Floyd song (it is David Bowie's), setting the entire wrong direction.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Accepted the unsupported Pink Floyd framing without verification and propagated it into the next sub-task.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Search on the false premise returned irrelevant docs; attempt abandoned.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with no strategy change.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query, pure waste.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Final attempt still had no evidence yet asserted 'Roger Waters', propagating the earlier hallucination.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Coordinator output merely propagates the fabricated Pink Floyd/Roger Waters chain instead of David Bowie.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "10": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator hallucinated an 'Eastern Front / Eastern Europe' framing not supported by the question, adding a misleading premise, though the final wrong answer (Greece) came from the expert's retrieval."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "First search returned entirely irrelevant mythology/fiction docs; attempt abandoned and retried."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Reformulated query still returned irrelevant fictional Nazi-plan docs; attempt abandoned."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeats the identical earlier query with no strategy change \u2014 pure waste, result not final."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Final attempt repeats the same failed query and then fabricates 'Greece' from the irrelevant Icarus Greek-myth document instead of admitting no evidence \u2014 the direct root cause of the wrong answer."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator simply relays the expert's unsupported 'Greece' answer without verification; propagated failure."
+    }
+   },
+   "usage": {
+    "inputTokens": 7846,
+    "outputTokens": 989,
+    "totalTokens": 8835,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 12.85,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Error\",\n      \"critical_type\": null,\n      \"reason\": \"Coordinator hallucinated an 'Eastern Front / Eastern Europe' framing not supported by the question, adding a misleading premise, though the final wrong answer (Greece) came from the expert's retrieval.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": null,\n      \"reason\": \"First search returned entirely irrelevant mythology/fiction docs; attempt abandoned and retried.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": null,\n      \"reason\": \"Reformulated query still returned irrelevant fictional Nazi-plan docs; attempt abandoned.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": null,\n      \"reason\": \"Repeats the identical earlier query with no strategy change \u2014 pure waste, result not final.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"Final attempt repeats the same failed query and then fabricates 'Greece' from the irrelevant Icarus Greek-myth document instead of admitting no evidence \u2014 the direct root cause of the wrong answer.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"critical_type\": null,\n      \"reason\": \"Coordinator simply relays the expert's unsupported 'Greece' answer without verification; propagated failure.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "11": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly decomposed the question and assigned the media/culture expert to find what 'Itchy & Scratchy & Marge' satirized."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "First search query returned wholly irrelevant docs (triffids, webworms) and was abandoned without being used."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Reformulated query still returned off-topic docs; attempt abandoned and re-issued identically afterwards."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with no strategy change, returning the same useless documents \u2014 pure waste."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Final attempt: despite retrieving nothing about the episode, the expert latched onto the incidental 'Class discrimination' doc and asserted 'class discrimination' instead of censorship."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator merely propagated the expert's unsupported 'class discrimination' answer without verification."
+    }
+   },
+   "usage": {
+    "inputTokens": 8053,
+    "outputTokens": 740,
+    "totalTokens": 8793,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 11.02,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly decomposed the question and assigned the media/culture expert to find what 'Itchy & Scratchy & Marge' satirized.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"First search query returned wholly irrelevant docs (triffids, webworms) and was abandoned without being used.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Reformulated query still returned off-topic docs; attempt abandoned and re-issued identically afterwards.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with no strategy change, returning the same useless documents \u2014 pure waste.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"Final attempt: despite retrieving nothing about the episode, the expert latched onto the incidental 'Class discrimination' doc and asserted 'class discrimination' instead of censorship.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Coordinator merely propagated the expert's unsupported 'class discrimination' answer without verification.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "12": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Reasoning correctly identifies an orison as a prayer/devotional act; content is accurate and necessary."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Substantively correct (prayer) but phrased as a verbose definition rather than the concise 'praying', so it failed exact match \u2014 a precision/format failure, not a factual error."
+    }
+   },
+   "usage": {
+    "inputTokens": 5324,
+    "outputTokens": 638,
+    "totalTokens": 5962,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 11.72,
+   "expected": 2,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Reasoning correctly identifies an orison as a prayer/devotional act; content is accurate and necessary.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Substantively correct (prayer) but phrased as a verbose definition rather than the concise 'praying', so it failed exact match \u2014 a precision/format failure, not a factual error.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "13": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct decomposition: asking for the release date of the first film is the right first sub-task."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Query returned entirely irrelevant documents (/e/ OS, MM2H); attempt abandoned and retried."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with no strategy change; same irrelevant docs, result not used."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Final attempt again retrieved nothing about the film yet the expert reported 'September 12, 2018', a date lifted from the unrelated /e/ OS document \u2014 fabricated evidence (actual release was Dec 2017)."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Reasonable next sub-task: obtain the second film's release date for comparison."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search 'Lost Kisses' returned generic kissing articles; attempt abandoned."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Reformulated query still irrelevant (candy/kiss docs); result not used."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Same query repeated with no change, pure waste."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Final attempt again found nothing on the film but returned '1997', a year scraped from an HIV-kissing passage \u2014 unsupported date delivered to the coordinator (film is actually 'I baci mai dati', 2010)."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator propagated both fabricated dates and omitted the expected title form ('I baci mai dati'/Lost Kisses) as the answer entity, so the response is graded wrong despite the ordering coincidentally matching."
+    }
+   },
+   "usage": {
+    "inputTokens": 9817,
+    "outputTokens": 2286,
+    "totalTokens": 12103,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 27.62,
+   "expected": 10,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correct decomposition: asking for the release date of the first film is the right first sub-task.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Query returned entirely irrelevant documents (/e/ OS, MM2H); attempt abandoned and retried.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with no strategy change; same irrelevant docs, result not used.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"Final attempt again retrieved nothing about the film yet the expert reported 'September 12, 2018', a date lifted from the unrelated /e/ OS document \u2014 fabricated evidence (actual release was Dec 2017).\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Reasonable next sub-task: obtain the second film's release date for comparison.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Search 'Lost Kisses' returned generic kissing articles; attempt abandoned.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Reformulated query still irrelevant (candy/kiss docs); result not used.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Same query repeated with no change, pure waste.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"Final attempt again found nothing on the film but returned '1997', a year scraped from an HIV-kissing passage \u2014 unsupported date delivered to the coordinator (film is actually 'I baci mai dati', 2010).\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Coordinator propagated both fabricated dates and omitted the expected title form ('I baci mai dati'/Lost Kisses) as the answer entity, so the response is graded wrong despite the ordering coincidentally matching.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "14": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly interpreted 'The Fly' as the 1986 Cronenberg film and delegated an appropriate sub-question."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Reasonable query but retrieval returned irrelevant docs; attempt abandoned and retried."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with no strategy change; wasted retrieval, result abandoned."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query, pure waste with no new information."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth identical query, no strategy adaptation, result abandoned."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fifth identical query, redundant retrieval loop."
+    },
+    "expert_ci0_cycle5": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Final attempt again retrieved nothing relevant yet the expert asserted 'Jerry Goldsmith' from hallucinated parametric knowledge instead of Howard Shore, directly producing the wrong answer."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator merely propagated the expert's hallucinated composer without adding a new mistake."
+    }
+   },
+   "usage": {
+    "inputTokens": 9141,
+    "outputTokens": 897,
+    "totalTokens": 10038,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 10.35,
+   "expected": 8,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly interpreted 'The Fly' as the 1986 Cronenberg film and delegated an appropriate sub-question.\"\n    },\n    \"expert_r1\": {\n      \"reason\": \"Reply relaying the expert's hallucinated answer 'Jerry Goldsmith' instead of Howard Shore.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Reasonable query but retrieval returned irrelevant docs; attempt abandoned and retried.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with no strategy change; wasted retrieval, result abandoned.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query, pure waste with no new information.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth identical query, no strategy adaptation, result abandoned.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fifth identical query, redundant retrieval loop.\"\n    },\n    \"expert_ci0_cycle5\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"Final attempt again retrieved nothing relevant yet the expert asserted 'Jerry Goldsmith' from hallucinated parametric knowledge instead of Howard Shore, directly producing the wrong answer.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Coordinator merely propagated the expert's hallucinated composer without adding a new mistake.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "15": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct decomposition: identify both birth dates, starting with Mickey Hart."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "First broad search returned no birth-date info; attempt abandoned and retried."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated query with no new strategy; results unused, superseded by next attempt."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Final attempt returned the same irrelevant docs yet the expert emitted a garbled/hallucinated date ('October 2\u0105\u017c') not supported by retrieval, feeding the wrong comparison."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator invented the year 1948 that the expert never provided, propagating and amplifying the bad Hart date before moving on to Tony Owen."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Broad 'Tony Owen' search returned unrelated people; attempt abandoned."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Wrong entity assumption (racing driver) and irrelevant docs, but result superseded by later retry."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with identical irrelevant results; pure waste."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Final attempt again retrieved nothing about Tony Owen, yet the expert fabricated '20 July 1931', which directly produced the wrong comparison."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Propagates both fabricated dates to conclude Mickey Hart was born later, contradicting the expected answer."
+    }
+   },
+   "usage": {
+    "inputTokens": 10172,
+    "outputTokens": 1746,
+    "totalTokens": 11918,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 21.11,
+   "expected": 10,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correct decomposition: identify both birth dates, starting with Mickey Hart.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"First broad search returned no birth-date info; attempt abandoned and retried.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated query with no new strategy; results unused, superseded by next attempt.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"Final attempt returned the same irrelevant docs yet the expert emitted a garbled/hallucinated date ('October 2\u0105\u017c') not supported by retrieval, feeding the wrong comparison.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Coordinator invented the year 1948 that the expert never provided, propagating and amplifying the bad Hart date before moving on to Tony Owen.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Broad 'Tony Owen' search returned unrelated people; attempt abandoned.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Wrong entity assumption (racing driver) and irrelevant docs, but result superseded by later retry.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with identical irrelevant results; pure waste.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"Final attempt again retrieved nothing about Tony Owen, yet the expert fabricated '20 July 1931', which directly produced the wrong comparison.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Propagates both fabricated dates to conclude Mickey Hart was born later, contradicting the expected answer.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "16": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Reasonable routing of a factual occupation question to the science/general-knowledge expert."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Thinking was fine but the query retrieved documents about Shamoon Alam Khan, entirely unrelated to Adil Shamoo, starting the wrong-entity track."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with no strategy change; results abandoned."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of the same query, pure waste."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final attempt of the loop; expert concluded 'commandant' from clearly unrelated documents and reported this wrong answer."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly flagged the implausible 'commandant' answer and requested verification."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Slightly reworded query again retrieved the wrong person's documents, with no disambiguation attempt."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Expert asserted it had found the occupation and answered 'naval officer' despite docs not mentioning Adil Shamoo; propagates the retrieval failure."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Correctly rejected the expert output but then fabricated unsupported 'professor of bioethics, former dean at UC Irvine' from parametric memory instead of the correct biochemist fact."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Outputs the hallucinated occupation introduced in coord_r3, missing the expected 'biochemist'."
+    }
+   },
+   "usage": {
+    "inputTokens": 9268,
+    "outputTokens": 1909,
+    "totalTokens": 11177,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 22.77,
+   "expected": 10,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Reasonable routing of a factual occupation question to the science/general-knowledge expert.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Thinking was fine but the query retrieved documents about Shamoon Alam Khan, entirely unrelated to Adil Shamoo, starting the wrong-entity track.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with no strategy change; results abandoned.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third repetition of the same query, pure waste.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Final attempt of the loop; expert concluded 'commandant' from clearly unrelated documents and reported this wrong answer.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly flagged the implausible 'commandant' answer and requested verification.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Slightly reworded query again retrieved the wrong person's documents, with no disambiguation attempt.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Expert asserted it had found the occupation and answered 'naval officer' despite docs not mentioning Adil Shamoo; propagates the retrieval failure.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \\u2014 Response Process\",\n      \"reason\": \"Correctly rejected the expert output but then fabricated unsupported 'professor of bioethics, former dean at UC Irvine' from parametric memory instead of the correct biochemist fact.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Outputs the hallucinated occupation introduced in coord_r3, missing the expected 'biochemist'.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "17": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Reasonable domain routing of a media/entertainment question to the culture expert; no error introduced."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "First search returned irrelevant psychological-trauma docs; attempt abandoned and retried, so wasteful rather than causal."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Near-identical query with no strategy change (no disambiguation of film/TV series), again abandoned."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Exact repetition of the previous query returning the same useless docs \u2014 pure waste."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Final attempt again retrieved no relevant evidence, yet the expert asserted 'Jeff Melman' from parametric guessing, fabricating the answer used downstream."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator merely propagated the expert's unsupported hallucination instead of the correct producer (Dario Argento)."
+    }
+   },
+   "usage": {
+    "inputTokens": 7457,
+    "outputTokens": 809,
+    "totalTokens": 8266,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 11.17,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"critical_type\": null,\n      \"reason\": \"Reasonable domain routing of a media/entertainment question to the culture expert; no error introduced.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": null,\n      \"reason\": \"First search returned irrelevant psychological-trauma docs; attempt abandoned and retried, so wasteful rather than causal.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": null,\n      \"reason\": \"Near-identical query with no strategy change (no disambiguation of film/TV series), again abandoned.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": null,\n      \"reason\": \"Exact repetition of the previous query returning the same useless docs \u2014 pure waste.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"Final attempt again retrieved no relevant evidence, yet the expert asserted 'Jeff Melman' from parametric guessing, fabricating the answer used downstream.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"critical_type\": null,\n      \"reason\": \"Coordinator merely propagated the expert's unsupported hallucination instead of the correct producer (Dario Argento).\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "18": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the novel and characters without error."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Final answer matches the expected answer exactly."
+    }
+   },
+   "usage": {
+    "inputTokens": 5485,
+    "outputTokens": 90,
+    "totalTokens": 5575,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 2.68,
+   "expected": 2,
+   "raw": "{\"steps\": {\"coord_r1\": {\"severity\": \"Informational\", \"reason\": \"Coordinator correctly identified the novel and characters without error.\"}, \"final_answer\": {\"severity\": \"Informational\", \"reason\": \"Final answer matches the expected answer exactly.\"}}}",
+   "temperature": null
+  },
+  "19": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly derived 'gunwale' from gun + wale with sound etymological reasoning; no expert needed."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Final answer 'gunwale' matches the expected answer exactly."
+    }
+   },
+   "usage": {
+    "inputTokens": 5399,
+    "outputTokens": 118,
+    "totalTokens": 5517,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 4.44,
+   "expected": 2,
+   "raw": "{\"steps\": {\"coord_r1\": {\"severity\": \"Informational\", \"reason\": \"Coordinator correctly derived 'gunwale' from gun + wale with sound etymological reasoning; no expert needed.\"}, \"final_answer\": {\"severity\": \"Informational\", \"reason\": \"Final answer 'gunwale' matches the expected answer exactly.\"}}}",
+   "temperature": null
+  },
+  "20": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational",
+      "critical_type": "Centralized Agent \u2014 Expert Assignment"
+     },
+     "reason": "Reasonable decomposition and delegation of the genealogy question to an expert."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Search returned documents about a different person (Charles 'Nish' Bruce) and the expert accepted them without verifying identity, introducing the wrong grandfather."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Merely reconfirms the mistaken identity from the previous retrieval and outputs the wrong answer (propagation)."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Coordinator passes through the expert's wrong answer without adding a new mistake."
+    }
+   },
+   "usage": {
+    "inputTokens": 6741,
+    "outputTokens": 821,
+    "totalTokens": 7562,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 10.4,
+   "expected": 4,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"critical_type\": \"Centralized Agent \u2014 Expert Assignment\",\n      \"reason\": \"Reasonable decomposition and delegation of the genealogy question to an expert.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"Search returned documents about a different person (Charles 'Nish' Bruce) and the expert accepted them without verifying identity, introducing the wrong grandfather.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"Merely reconfirms the mistaken identity from the previous retrieval and outputs the wrong answer (propagation).\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Coordinator passes through the expert's wrong answer without adding a new mistake.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "21": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Coordinator hallucinated the family relation (claimed Liszt married Cosima, daughter of Hans von B\u00fclow) instead of recognizing Cosima as Liszt's daughter who married Richard Wagner, and did not delegate any verification."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Propagates the hallucinated reasoning, outputting Hans von B\u00fclow instead of Richard Wagner."
+    }
+   },
+   "usage": {
+    "inputTokens": 5283,
+    "outputTokens": 535,
+    "totalTokens": 5818,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 7.81,
+   "expected": 2,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Coordinator hallucinated the family relation (claimed Liszt married Cosima, daughter of Hans von B\u00fclow) instead of recognizing Cosima as Liszt's daughter who married Richard Wagner, and did not delegate any verification.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"critical_type\": null,\n      \"reason\": \"Propagates the hallucinated reasoning, outputting Hans von B\u00fclow instead of Richard Wagner.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "22": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Reasonable decomposition: first identify the team playing at Victoria Park, then verify the nickname."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "First search returns irrelevant docs (Murrayfield, Kilmarnock) and is abandoned/retried identically."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with no strategy change; result abandoned."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Same query repeated again, pure waste, result not used."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth identical query, no new information, abandoned."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Final attempt: never reformulated the query (e.g. 'Victoria Park Dingwall') and answered 'Kilmarnock F.C.' despite its own note that Kilmarnock plays at Rugby Park, injecting the root factual error (correct answer: Ross County)."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Accepts the wrong premise that Kilmarnock plays at Victoria Park and adds an unfounded 'Tangerines' claim, propagating the expert's error."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "First nickname search within the already wrong framing; result retried identically."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical repeated query, abandoned."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Same query repeated, wasteful with no new information."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth identical query, no strategy change, abandoned."
+    },
+    "expert_ci1_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final answer 'Killie' is locally correct but serves the wrong framing, propagating the earlier misidentification."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Concludes no team matches, reasoning only from the wrong Kilmarnock premise rather than re-querying Victoria Park; propagated failure."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Denies existence of the team, propagating the upstream retrieval error instead of answering Ross County."
+    }
+   },
+   "usage": {
+    "inputTokens": 12326,
+    "outputTokens": 1338,
+    "totalTokens": 13664,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 17.09,
+   "expected": 14,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Reasonable decomposition: first identify the team playing at Victoria Park, then verify the nickname.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"First search returns irrelevant docs (Murrayfield, Kilmarnock) and is abandoned/retried identically.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with no strategy change; result abandoned.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Same query repeated again, pure waste, result not used.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth identical query, no new information, abandoned.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"Final attempt: never reformulated the query (e.g. 'Victoria Park Dingwall') and answered 'Kilmarnock F.C.' despite its own note that Kilmarnock plays at Rugby Park, injecting the root factual error (correct answer: Ross County).\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Accepts the wrong premise that Kilmarnock plays at Victoria Park and adds an unfounded 'Tangerines' claim, propagating the expert's error.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"First nickname search within the already wrong framing; result retried identically.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical repeated query, abandoned.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Same query repeated, wasteful with no new information.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth identical query, no strategy change, abandoned.\"\n    },\n    \"expert_ci1_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Final answer 'Killie' is locally correct but serves the wrong framing, propagating the earlier misidentification.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Concludes no team matches, reasoning only from the wrong Kilmarnock premise rather than re-querying Victoria Park; propagated failure.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Denies existence of the team, propagating the upstream retrieval error instead of answering Ross County.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "23": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Correctly decides to identify the director first, but drops the specific film ('in Panama') from the subtask and already seeds the unfounded Frank Tuttle assumption, framing the whole run wrongly."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "First search returns wholly irrelevant 'Torch Computers' docs; attempt abandoned and retried."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with no strategy change; wasted retry."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query, pure waste."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth identical query, no reformulation, abandoned."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final attempt still returns irrelevant docs yet the expert fabricates 'Carl Dean Svozil' as the director, feeding false info back to the coordinator."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Correctly rejects the hallucinated name but merely re-issues the exact same subtask, adding an unproductive round."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Same failed query repeated in the second round; abandoned attempt."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated, no new information."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query, pure waste."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth identical query, no reformulation."
+    },
+    "expert_ci1_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final attempt again retrieves nothing relevant but the expert invents 'Jack Webster', giving the coordinator a second false director."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Root cause: coordinator abandons retrieval and asserts from hallucinated 'historical records' that Frank Tuttle directed the series, then asks only for Tuttle's birthplace instead of the actual director William Clemens (Saginaw, Michigan)."
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search on the wrong person (Frank Tuttle) returns unrelated Tuttles; abandoned attempt within a wrong framing."
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Reformulated slightly but still searching the wrong, coordinator-imposed target; attempt abandoned."
+    },
+    "expert_ci2_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final attempt conflates Magruder Tuttle's birthplace with Frank Tuttle's and reports 'Lenoir, North Carolina', propagating the coordinator's wrong premise."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Outputs 'Lenoir, North Carolina', propagating the hallucinated director and the mismatched biography without adding a new error."
+    }
+   },
+   "usage": {
+    "inputTokens": 14129,
+    "outputTokens": 2051,
+    "totalTokens": 16180,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 25.19,
+   "expected": 17,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Correctly decides to identify the director first, but drops the specific film ('in Panama') from the subtask and already seeds the unfounded Frank Tuttle assumption, framing the whole run wrongly.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"First search returns wholly irrelevant 'Torch Computers' docs; attempt abandoned and retried.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with no strategy change; wasted retry.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query, pure waste.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth identical query, no reformulation, abandoned.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Final attempt still returns irrelevant docs yet the expert fabricates 'Carl Dean Svozil' as the director, feeding false info back to the coordinator.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Correctly rejects the hallucinated name but merely re-issues the exact same subtask, adding an unproductive round.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Same failed query repeated in the second round; abandoned attempt.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated, no new information.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query, pure waste.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth identical query, no reformulation.\"\n    },\n    \"expert_ci1_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Final attempt again retrieves nothing relevant but the expert invents 'Jack Webster', giving the coordinator a second false director.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Root cause: coordinator abandons retrieval and asserts from hallucinated 'historical records' that Frank Tuttle directed the series, then asks only for Tuttle's birthplace instead of the actual director William Clemens (Saginaw, Michigan).\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Search on the wrong person (Frank Tuttle) returns unrelated Tuttles; abandoned attempt within a wrong framing.\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Reformulated slightly but still searching the wrong, coordinator-imposed target; attempt abandoned.\"\n    },\n    \"expert_ci2_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Final attempt conflates Magruder Tuttle's birthplace with Frank Tuttle's and reports 'Lenoir, North Carolina', propagating the coordinator's wrong premise.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Outputs 'Lenoir, North Carolina', propagating the hallucinated director and the mismatched biography without adding a new error.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "24": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Reasoning correctly identifies the right ventricle as the source of blood to the pulmonary trunk, matching the expected answer."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Content is factually correct and consistent with the expected answer; the run is only marked false due to the verbose phrasing not matching the exact-match reference string."
+    }
+   },
+   "usage": {
+    "inputTokens": 5171,
+    "outputTokens": 392,
+    "totalTokens": 5563,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 7.14,
+   "expected": 2,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Reasoning correctly identifies the right ventricle as the source of blood to the pulmonary trunk, matching the expected answer.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Content is factually correct and consistent with the expected answer; the run is only marked false due to the verbose phrasing not matching the exact-match reference string.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "25": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly framed the question and delegated to a suitable expert."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "First search retrieved the Plato's Retreat/Ansonia doc that directly contains the correct answer."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Redundant follow-up search; the answer was already retrieved in the previous cycle and this query returned irrelevant hotels."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Query was a near-duplicate repetition, but the step produced the correct final answer (Ansonia Hotel)."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator reported the correct answer matching the expected 'Ansonia Hotel'."
+    }
+   },
+   "usage": {
+    "inputTokens": 7601,
+    "outputTokens": 786,
+    "totalTokens": 8387,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 10.34,
+   "expected": 5,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"critical_type\": null,\n      \"reason\": \"Coordinator correctly framed the question and delegated to a suitable expert.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Informational\",\n      \"critical_type\": null,\n      \"reason\": \"First search retrieved the Plato's Retreat/Ansonia doc that directly contains the correct answer.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": null,\n      \"reason\": \"Redundant follow-up search; the answer was already retrieved in the previous cycle and this query returned irrelevant hotels.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Informational\",\n      \"critical_type\": null,\n      \"reason\": \"Query was a near-duplicate repetition, but the step produced the correct final answer (Ansonia Hotel).\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"critical_type\": null,\n      \"reason\": \"Coordinator reported the correct answer matching the expected 'Ansonia Hotel'.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "26": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly framed the question as a music/culture query and delegated to an appropriate expert."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "First search returned irrelevant IWW/wage-slavery docs; attempt abandoned and re-issued unchanged."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with no strategy change; wasteful and abandoned."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query, pure waste with no new information gained."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Final attempt still used irrelevant docs and inferred 'Joe Hill' from a loosely related labor-song passage, producing the wrong answer that fed the final output."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator merely propagated the expert's incorrect 'Joe Hill' answer without adding a new mistake."
+    }
+   },
+   "usage": {
+    "inputTokens": 7578,
+    "outputTokens": 585,
+    "totalTokens": 8163,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 7.74,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly framed the question as a music/culture query and delegated to an appropriate expert.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"First search returned irrelevant IWW/wage-slavery docs; attempt abandoned and re-issued unchanged.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with no strategy change; wasteful and abandoned.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query, pure waste with no new information gained.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"Final attempt still used irrelevant docs and inferred 'Joe Hill' from a loosely related labor-song passage, producing the wrong answer that fed the final output.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Coordinator merely propagated the expert's incorrect 'Joe Hill' answer without adding a new mistake.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "27": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Reframed the question 'who opens the church' as 'who manages/has custody', locking the whole run onto Christian denominations instead of the Muslim keyholder family, which is the root of the wrong answer."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "First search returned wholly irrelevant docs and was abandoned; reasoning fine but query yielded no usable evidence."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Reworded query, again irrelevant results, abandoned without feeding the answer."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Identical repeat of the first query with identical useless docs \u2014 pure waste."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Third+ repetition of the same query, no strategy change, result unused."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Final attempt again retrieved nothing relevant yet the expert answered 'Franciscans' from parametric guesswork, propagating the coordinator's wrong framing into the pipeline."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Persisted with the custodial-arrangement framing and injected its own unverified denomination list, propagating the initial misframing."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Search on the wrong sub-question returned irrelevant fiction/music docs; abandoned."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Exact query repeat with identical useless results \u2014 wasteful."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Third identical query, no strategy change."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Fourth identical query, pure waste."
+    },
+    "expert_ci1_cycle4": {
+     "labels": {
+      "severity": "Warning",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Fifth identical query, result unused."
+    },
+    "expert_ci1_cycle5": {
+     "labels": {
+      "severity": "Warning",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Sixth identical query, pure waste."
+    },
+    "expert_ci1_cycle6": {
+     "labels": {
+      "severity": "Warning",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Seventh identical query, no adaptation."
+    },
+    "expert_ci1_cycle7": {
+     "labels": {
+      "severity": "Warning",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Eighth identical query, abandoned result."
+    },
+    "expert_ci1_cycle8": {
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Final attempt answered 'Greek Orthodox Church' with zero supporting retrieval, feeding an unsupported claim into the final answer."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Synthesised the unsupported expert outputs plus its own prior beliefs, staying inside the wrong custodianship framing."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Propagates the misframed custodianship answer; fails to name the Nusaybah/Joudeh Muslim family who actually unlock the church."
+    }
+   },
+   "usage": {
+    "inputTokens": 15262,
+    "outputTokens": 2188,
+    "totalTokens": 17450,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 24.83,
+   "expected": 18,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Reframed the question 'who opens the church' as 'who manages/has custody', locking the whole run onto Christian denominations instead of the Muslim keyholder family, which is the root of the wrong answer.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"First search returned wholly irrelevant docs and was abandoned; reasoning fine but query yielded no usable evidence.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Reworded query, again irrelevant results, abandoned without feeding the answer.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Identical repeat of the first query with identical useless docs \u2014 pure waste.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Third+ repetition of the same query, no strategy change, result unused.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Error\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Final attempt again retrieved nothing relevant yet the expert answered 'Franciscans' from parametric guesswork, propagating the coordinator's wrong framing into the pipeline.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Persisted with the custodial-arrangement framing and injected its own unverified denomination list, propagating the initial misframing.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Search on the wrong sub-question returned irrelevant fiction/music docs; abandoned.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Exact query repeat with identical useless results \u2014 wasteful.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Third identical query, no strategy change.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Fourth identical query, pure waste.\"\n    },\n    \"expert_ci1_cycle4\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Fifth identical query, result unused.\"\n    },\n    \"expert_ci1_cycle5\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Sixth identical query, pure waste.\"\n    },\n    \"expert_ci1_cycle6\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Seventh identical query, no adaptation.\"\n    },\n    \"expert_ci1_cycle7\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Eighth identical query, abandoned result.\"\n    },\n    \"expert_ci1_cycle8\": {\n      \"severity\": \"Error\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Final attempt answered 'Greek Orthodox Church' with zero supporting retrieval, feeding an unsupported claim into the final answer.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Error\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Synthesised the unsupported expert outputs plus its own prior beliefs, staying inside the wrong custodianship framing.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Propagates the misframed custodianship answer; fails to name the Nusaybah/Joudeh Muslim family who actually unlock the church.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "28": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly judged the simple geographic fact needed no expert call."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Answer 'Baton Rouge' matches the expected answer exactly."
+    }
+   },
+   "usage": {
+    "inputTokens": 5146,
+    "outputTokens": 101,
+    "totalTokens": 5247,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 2.73,
+   "expected": 2,
+   "raw": "{\"steps\": {\"coord_r1\": {\"severity\": \"Informational\", \"reason\": \"Correctly judged the simple geographic fact needed no expert call.\"}, \"final_answer\": {\"severity\": \"Informational\", \"reason\": \"Answer 'Baton Rouge' matches the expected answer exactly.\"}}}",
+   "temperature": null
+  },
+  "29": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator skipped any decomposition/expert retrieval and hallucinated that the premiership was created in 1801 under Count Repnin, instead of Sergei Witte in November 1905."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Simply propagates the hallucinated 1801 date into the final output without adding a new mistake."
+    }
+   },
+   "usage": {
+    "inputTokens": 5235,
+    "outputTokens": 339,
+    "totalTokens": 5574,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 5.11,
+   "expected": 2,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Coordinator skipped any decomposition/expert retrieval and hallucinated that the premiership was created in 1801 under Count Repnin, instead of Sergei Witte in November 1905.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Simply propagates the hallucinated 1801 date into the final output without adding a new mistake.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "30": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Misframed the multi-hop question by presupposing the Yongle Emperor was the capital-mover, and never decomposed the required final hop ('who later moved the capital from that city to Beijing'), so the whole run pursued the wrong target."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Overly long natural-language query returned irrelevant docs; attempt abandoned and retried."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with no strategy change; wasteful, result abandoned."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final retry repeats the same failed query and fabricates 'the people of Beijing' with no supporting document, propagating the coordinator's wrong framing."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Recognizes the expert answer is unreliable but stays inside the wrong framing and concludes the Yongle Emperor moved the capital, propagating the root misdecomposition."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Outputs a statement about the Yongle Emperor instead of naming who moved the capital from Nanjing to Beijing (Yuan Shikai); propagated failure."
+    }
+   },
+   "usage": {
+    "inputTokens": 8060,
+    "outputTokens": 1184,
+    "totalTokens": 9244,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 15.16,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Misframed the multi-hop question by presupposing the Yongle Emperor was the capital-mover, and never decomposed the required final hop ('who later moved the capital from that city to Beijing'), so the whole run pursued the wrong target.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Overly long natural-language query returned irrelevant docs; attempt abandoned and retried.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with no strategy change; wasteful, result abandoned.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Final retry repeats the same failed query and fabricates 'the people of Beijing' with no supporting document, propagating the coordinator's wrong framing.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Recognizes the expert answer is unreliable but stays inside the wrong framing and concludes the Yongle Emperor moved the capital, propagating the root misdecomposition.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Outputs a statement about the Yongle Emperor instead of naming who moved the capital from Nanjing to Beijing (Yuan Shikai); propagated failure.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "31": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct decomposition: find the mother first, then her father."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search returned wholly irrelevant naval documents; attempt abandoned without an answer."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Near-identical query repeated with no strategy change; result unused."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query, pure waste; no answer produced."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Same query repeated again, no new information."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Final wasted repetition; expert hit max iterations without an answer."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Extra round re-asking the identical question after expert failure, with no reframing of the query."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeats the already-failed query, returning irrelevant docs."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Same query again; retrieved SMS Irene doc is off-topic."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Root cause: fabricated 'Princess Irene of Hesse and by Rhine' as the mother from an unrelated warship document instead of reporting no information; correct mother is Princess Sophie of Greece and Denmark."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Logically sound next step but built on the hallucinated mother, propagating the wrong lineage."
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search on wrong person returns irrelevant naval docs; attempt not used."
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical repeated query, no new evidence."
+    },
+    "expert_ci2_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of the same query, pure waste."
+    },
+    "expert_ci2_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Another identical repetition with no strategy change."
+    },
+    "expert_ci2_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final attempt whose answer is used: misreads 'sister-in-law of Kaiser Wilhelm II' as paternity, propagating the wrong chain."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Propagates the hallucinated chain and outputs Kaiser Wilhelm II instead of Prince Andrew of Greece and Denmark."
+    }
+   },
+   "usage": {
+    "inputTokens": 15002,
+    "outputTokens": 1940,
+    "totalTokens": 16942,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 22.56,
+   "expected": 17,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correct decomposition: find the mother first, then her father.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Search returned wholly irrelevant naval documents; attempt abandoned without an answer.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Near-identical query repeated with no strategy change; result unused.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query, pure waste; no answer produced.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Same query repeated again, no new information.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Final wasted repetition; expert hit max iterations without an answer.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Extra round re-asking the identical question after expert failure, with no reframing of the query.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeats the already-failed query, returning irrelevant docs.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Same query again; retrieved SMS Irene doc is off-topic.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"Root cause: fabricated 'Princess Irene of Hesse and by Rhine' as the mother from an unrelated warship document instead of reporting no information; correct mother is Princess Sophie of Greece and Denmark.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Logically sound next step but built on the hallucinated mother, propagating the wrong lineage.\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Search on wrong person returns irrelevant naval docs; attempt not used.\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical repeated query, no new evidence.\"\n    },\n    \"expert_ci2_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third repetition of the same query, pure waste.\"\n    },\n    \"expert_ci2_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Another identical repetition with no strategy change.\"\n    },\n    \"expert_ci2_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Final attempt whose answer is used: misreads 'sister-in-law of Kaiser Wilhelm II' as paternity, propagating the wrong chain.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Propagates the hallucinated chain and outputs Kaiser Wilhelm II instead of Prince Andrew of Greece and Denmark.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "32": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly classified the query as a film/entertainment question and delegated to an appropriate expert."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search returned irrelevant generic 'distance' documents; attempt abandoned and retried."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with no strategy change; result abandoned again."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query, pure waste with no new information gained."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "After yet another irrelevant retrieval, the expert fabricated 'Mark Levin' instead of refining the query or admitting lack of evidence \u2014 root cause of the wrong answer."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator simply propagated the expert's hallucinated director name without verification."
+    }
+   },
+   "usage": {
+    "inputTokens": 7349,
+    "outputTokens": 717,
+    "totalTokens": 8066,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 9.26,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly classified the query as a film/entertainment question and delegated to an appropriate expert.\"\n    },\n    \"expert_r1\": {\n      \"reason\": \"Expert's reply relays the hallucinated name 'Mark Levin' produced in its final cycle.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Search returned irrelevant generic 'distance' documents; attempt abandoned and retried.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with no strategy change; result abandoned again.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query, pure waste with no new information gained.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"After yet another irrelevant retrieval, the expert fabricated 'Mark Levin' instead of refining the query or admitting lack of evidence \u2014 root cause of the wrong answer.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Coordinator simply propagated the expert's hallucinated director name without verification.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "33": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Delegation of a genealogy question to a 'biological/natural science' expert is an odd framing and the chosen expert failed, but the coordinator recovered by re-delegating, so it was mainly wasted overhead."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search returned entirely irrelevant documents; this attempt was ultimately abandoned and its branch's answer was rejected by the coordinator."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated near-identical query with no strategy change, again irrelevant docs; wasteful but not used in final answer."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of the same query, pure waste."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repetition of same query with no new information retrieved."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Produced a hallucinated answer (Duke Ernest II of Saxe-Weimar) from unrelated docs, but the coordinator detected and discarded it, so it did not feed the final failure."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly spotted the House of Ascania inconsistency and re-delegated the question to another expert."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Search retrieved the correct Wikipedia passage naming Henry II, Prince of Anhalt-Aschersleben as the father, which contained the needed lineage information."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Misread the retrieved doc: took Otto the Child (explicitly the maternal grandfather) as the paternal grandfather, ignoring father Henry II, introducing the root error."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Propagated the maternal/paternal confusion by tracing Otto the Child's ancestry to Henry the Lion."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator passed through the expert's wrong lineage answer without re-checking the retrieved father Henry II."
+    }
+   },
+   "usage": {
+    "inputTokens": 11923,
+    "outputTokens": 1565,
+    "totalTokens": 13488,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 19.81,
+   "expected": 11,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Delegation of a genealogy question to a 'biological/natural science' expert is an odd framing and the chosen expert failed, but the coordinator recovered by re-delegating, so it was mainly wasted overhead.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Search returned entirely irrelevant documents; this attempt was ultimately abandoned and its branch's answer was rejected by the coordinator.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated near-identical query with no strategy change, again irrelevant docs; wasteful but not used in final answer.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third repetition of the same query, pure waste.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth repetition of same query with no new information retrieved.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Produced a hallucinated answer (Duke Ernest II of Saxe-Weimar) from unrelated docs, but the coordinator detected and discarded it, so it did not feed the final failure.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly spotted the House of Ascania inconsistency and re-delegated the question to another expert.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Search retrieved the correct Wikipedia passage naming Henry II, Prince of Anhalt-Aschersleben as the father, which contained the needed lineage information.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"Misread the retrieved doc: took Otto the Child (explicitly the maternal grandfather) as the paternal grandfather, ignoring father Henry II, introducing the root error.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Propagated the maternal/paternal confusion by tracing Otto the Child's ancestry to Henry the Lion.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Coordinator passed through the expert's wrong lineage answer without re-checking the retrieved father Henry II.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "34": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Reasoning is vague and never actually recalls the number, and the coordinator generated no subtask or expert verification, leaving the answer unchecked; contributes but does not itself state the wrong value."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Coordinator produced '1-911', introducing an incorrect '1-' prefix not supported by any retrieved or expert information, making the final answer wrong."
+    }
+   },
+   "usage": {
+    "inputTokens": 5183,
+    "outputTokens": 756,
+    "totalTokens": 5939,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 13.08,
+   "expected": 2,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Reasoning is vague and never actually recalls the number, and the coordinator generated no subtask or expert verification, leaving the answer unchecked; contributes but does not itself state the wrong value.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Coordinator produced '1-911', introducing an incorrect '1-' prefix not supported by any retrieved or expert information, making the final answer wrong.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "35": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Recognizing the ambiguity of 'Tina' and asking for context is a reasonable first coordination move."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Bare 'Tina' query retrieved asteroid documents irrelevant to the intended referent; wasted effort without affecting success."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Query 'context of Tina in the question' is a meaningless retrieval string and returned the same unhelpful docs."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with no strategy change, returning the same documents; pure waste."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Extra clarification round caused by the previous expert's unhelpful 'asteroid' answer; overhead rather than a new error."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeat of the same broad 'Tina' query retrieved TINA software docs, unrelated to the person."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "'Tina character' search returned nucleic-acid and software docs; no useful information gained."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Same 'Tina character' query repeated with identical irrelevant results; wasteful repetition."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly resolves Tina to Tina Turner (US), reaching the right conclusion despite relying on parametric knowledge."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "'United States' matches the expected answer."
+    }
+   },
+   "usage": {
+    "inputTokens": 9441,
+    "outputTokens": 1348,
+    "totalTokens": 10789,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 17.68,
+   "expected": 10,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Recognizing the ambiguity of 'Tina' and asking for context is a reasonable first coordination move.\"\n    },\n    \"expert_r1\": {\n      \"reason\": \"Expert reports 'asteroid' as context, which is not the intended referent but did not derail the final result.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Bare 'Tina' query retrieved asteroid documents irrelevant to the intended referent; wasted effort without affecting success.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Query 'context of Tina in the question' is a meaningless retrieval string and returned the same unhelpful docs.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with no strategy change, returning the same documents; pure waste.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Extra clarification round caused by the previous expert's unhelpful 'asteroid' answer; overhead rather than a new error.\"\n    },\n    \"expert_r2\": {\n      \"reason\": \"Expert replies 'person', which happens to point the coordinator in the right direction.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeat of the same broad 'Tina' query retrieved TINA software docs, unrelated to the person.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"'Tina character' search returned nucleic-acid and software docs; no useful information gained.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Same 'Tina character' query repeated with identical irrelevant results; wasteful repetition.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Coordinator correctly resolves Tina to Tina Turner (US), reaching the right conclusion despite relying on parametric knowledge.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"'United States' matches the expected answer.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "36": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct decomposition: identify the director of the first film before comparing death dates."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search returned completely irrelevant marriage-equality docs; attempt abandoned and retried."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with no strategy change; result abandoned."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query, pure waste, result abandoned."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Final attempt again retrieved nothing relevant yet the expert fabricated 'Frank Pierson' as director, injecting a hallucinated fact used for the rest of the run."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Accepts the unsupported director name and builds the next sub-question on it, propagating the hallucination."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search on 'Frank Pierson die' retrieved irrelevant Hendrik Pierson docs; attempt abandoned."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Reformulated but still useless retrieval; abandoned."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Same query repeated with no new information; abandoned."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Fabricated death date 'June 24, 2006' with zero supporting evidence, propagating the earlier hallucinated director."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly moves to the second, independent sub-question about the other film's director."
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Query returned Italian units of measurement docs; irrelevant, abandoned."
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Reformulated query returned unrelated docs including a stray Dziga Vertov page; abandoned."
+    },
+    "expert_ci2_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated, no new information."
+    },
+    "expert_ci2_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth identical query, pure waste."
+    },
+    "expert_ci2_cycle4": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Answered 'Dziga Vertov' purely from a coincidental unrelated doc; this independent sub-answer is false (director is Mario Mattoli) and is independently necessary for the comparison."
+    },
+    "coord_r4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Accepts the hallucinated second director and requests his death date, propagating the error."
+    },
+    "expert_ci3_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Retrieval gave no death date; attempt abandoned."
+    },
+    "expert_ci3_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated, no new evidence."
+    },
+    "expert_ci3_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Reformulated query still returned irrelevant docs; abandoned."
+    },
+    "expert_ci3_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Same query repeated again, pure waste."
+    },
+    "expert_ci3_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Returned '1954' from parametric guess with no retrieved support, propagating the hallucinated director chain."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Propagates both hallucinated directors and answers with a person's name instead of the requested film title, so the output is scored wrong."
+    }
+   },
+   "usage": {
+    "inputTokens": 17715,
+    "outputTokens": 2853,
+    "totalTokens": 20568,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 32.49,
+   "expected": 23,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correct decomposition: identify the director of the first film before comparing death dates.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Search returned completely irrelevant marriage-equality docs; attempt abandoned and retried.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with no strategy change; result abandoned.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query, pure waste, result abandoned.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"Final attempt again retrieved nothing relevant yet the expert fabricated 'Frank Pierson' as director, injecting a hallucinated fact used for the rest of the run.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Accepts the unsupported director name and builds the next sub-question on it, propagating the hallucination.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Search on 'Frank Pierson die' retrieved irrelevant Hendrik Pierson docs; attempt abandoned.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Reformulated but still useless retrieval; abandoned.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Same query repeated with no new information; abandoned.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Fabricated death date 'June 24, 2006' with zero supporting evidence, propagating the earlier hallucinated director.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly moves to the second, independent sub-question about the other film's director.\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Query returned Italian units of measurement docs; irrelevant, abandoned.\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Reformulated query returned unrelated docs including a stray Dziga Vertov page; abandoned.\"\n    },\n    \"expert_ci2_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated, no new information.\"\n    },\n    \"expert_ci2_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth identical query, pure waste.\"\n    },\n    \"expert_ci2_cycle4\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"Answered 'Dziga Vertov' purely from a coincidental unrelated doc; this independent sub-answer is false (director is Mario Mattoli) and is independently necessary for the comparison.\"\n    },\n    \"coord_r4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Accepts the hallucinated second director and requests his death date, propagating the error.\"\n    },\n    \"expert_ci3_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Retrieval gave no death date; attempt abandoned.\"\n    },\n    \"expert_ci3_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated, no new evidence.\"\n    },\n    \"expert_ci3_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Reformulated query still returned irrelevant docs; abandoned.\"\n    },\n    \"expert_ci3_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Same query repeated again, pure waste.\"\n    },\n    \"expert_ci3_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Returned '1954' from parametric guess with no retrieved support, propagating the hallucinated director chain.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Propagates both hallucinated directors and answers with a person's name instead of the requested film title, so the output is scored wrong.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "37": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator refused to decompose the two-hop question (birthplace of Marzuki Alie = Palembang \u2192 Battle of Palembang) and wrongly declared the event non-existent without any expert retrieval."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Merely propagates the coordinator's prior false premise, producing the wrong 'no end date' answer instead of 15 February 1942."
+    }
+   },
+   "usage": {
+    "inputTokens": 5374,
+    "outputTokens": 385,
+    "totalTokens": 5759,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 5.95,
+   "expected": 2,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Coordinator refused to decompose the two-hop question (birthplace of Marzuki Alie = Palembang \u2192 Battle of Palembang) and wrongly declared the event non-existent without any expert retrieval.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Merely propagates the coordinator's prior false premise, producing the wrong 'no end date' answer instead of 15 February 1942.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "38": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Thinking contained shaky priors (vulture/crow) but the sub-question delegated was correct and well-framed."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "First search returned only tangential 'Animals in Christian art' docs; effort ultimately abandoned."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Slightly reworded query again returned no animal-envy mapping; wasted retrieval."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with identical useless documents; pure waste."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query; emitted unsupported answer 'dog', but it was discarded by the coordinator."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Extra verification round caused by the expert's unsupported 'dog'; sensible skepticism but added overhead."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeats an earlier query already known to be unproductive."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Retrieved the same irrelevant symbolism docs; no new information."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query repeated with identical results; wasteful."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical query; answer 'serpent' came from priors, not docs, and was not directly accepted."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third round triggered by coordinator's doubt about 'serpent'; redundant overhead though it did not break the run."
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search returned completely off-topic docs (jinx, military chaplains); wasted call."
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Reformulated query again retrieved irrelevant documents."
+    },
+    "expert_ci2_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Query returned unrelated car and dog-statue docs; no useful evidence."
+    },
+    "expert_ci2_cycle3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Despite unhelpful retrieval, the expert returned the correct answer 'snake' that fed the successful final output."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator output 'snake' matches the expected answer."
+    }
+   },
+   "usage": {
+    "inputTokens": 13860,
+    "outputTokens": 1732,
+    "totalTokens": 15592,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 21.31,
+   "expected": 16,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Thinking contained shaky priors (vulture/crow) but the sub-question delegated was correct and well-framed.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"First search returned only tangential 'Animals in Christian art' docs; effort ultimately abandoned.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Slightly reworded query again returned no animal-envy mapping; wasted retrieval.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with identical useless documents; pure waste.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query; emitted unsupported answer 'dog', but it was discarded by the coordinator.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Extra verification round caused by the expert's unsupported 'dog'; sensible skepticism but added overhead.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeats an earlier query already known to be unproductive.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Retrieved the same irrelevant symbolism docs; no new information.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Identical query repeated with identical results; wasteful.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third identical query; answer 'serpent' came from priors, not docs, and was not directly accepted.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third round triggered by coordinator's doubt about 'serpent'; redundant overhead though it did not break the run.\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Search returned completely off-topic docs (jinx, military chaplains); wasted call.\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Reformulated query again retrieved irrelevant documents.\"\n    },\n    \"expert_ci2_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Query returned unrelated car and dog-statue docs; no useful evidence.\"\n    },\n    \"expert_ci2_cycle3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Despite unhelpful retrieval, the expert returned the correct answer 'snake' that fed the successful final output.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Coordinator output 'snake' matches the expected answer.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  },
+  "39": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator arbitrarily narrowed the ambiguous title 'Solo' to the Star Wars film and asked only about its writer, excluding the book by Robert Mason that the question targets."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "First search returns irrelevant trilobite/Carbonite docs and is abandoned; wasteful retrieval within an already wrong framing."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Second near-identical query again returns useless docs and is abandoned without strategy change."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repeated query yields the same irrelevant documents; pure waste."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final attempt retrieves nothing useful yet the expert answers 'Lawrence Kasdan' from parametric memory, propagating the coordinator's wrong framing into the output."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator outputs the expert's answer about the Star Wars film instead of the book's author, merely propagating the root framing error."
+    }
+   },
+   "usage": {
+    "inputTokens": 8184,
+    "outputTokens": 849,
+    "totalTokens": 9033,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 0
+   },
+   "seconds": 11.26,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Coordinator arbitrarily narrowed the ambiguous title 'Solo' to the Star Wars film and asked only about its writer, excluding the book by Robert Mason that the question targets.\"\n    },\n    \"expert_r1\": {\n      \"reason\": \"Expert returns Lawrence Kasdan, faithfully answering the mis-framed sub-question; propagates the coordinator's wrong framing.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": null,\n      \"reason\": \"First search returns irrelevant trilobite/Carbonite docs and is abandoned; wasteful retrieval within an already wrong framing.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": null,\n      \"reason\": \"Second near-identical query again returns useless docs and is abandoned without strategy change.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"critical_type\": null,\n      \"reason\": \"Third repeated query yields the same irrelevant documents; pure waste.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"critical_type\": null,\n      \"reason\": \"Final attempt retrieves nothing useful yet the expert answers 'Lawrence Kasdan' from parametric memory, propagating the coordinator's wrong framing into the output.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"critical_type\": null,\n      \"reason\": \"Coordinator outputs the expert's answer about the Star Wars film instead of the book's author, merely propagating the root framing error.\"\n    }\n  }\n}\n```",
+   "temperature": null
+  }
+ }
+}

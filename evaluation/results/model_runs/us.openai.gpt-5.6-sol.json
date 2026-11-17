@@ -1,0 +1,2771 @@
+{
+ "model": "us.openai.gpt-5.6-sol",
+ "schema": {
+  "id": "severity",
+  "name": "Severity",
+  "description": "",
+  "ask_reason": true,
+  "questions": [
+   {
+    "id": "severity",
+    "prompt": "Did this step cause or contribute to the run's failure?",
+    "labels": [
+     "Informational",
+     "Warning",
+     "Error",
+     "Critical"
+    ],
+    "applies_to": [
+     "decision",
+     "cycle",
+     "output"
+    ],
+    "ask_if": null
+   },
+   {
+    "id": "critical_type",
+    "prompt": "Which kind of critical failure?",
+    "labels": [
+     "Centralized Agent \u2014 Task decomposition",
+     "Centralized Agent \u2014 Subtask Generation",
+     "Centralized Agent \u2014 Expert Assignment",
+     "Centralized Agent \u2014 Response Process",
+     "Expert Agent \u2014 reasoning",
+     "Expert Agent \u2014 interaction",
+     "Expert Agent \u2014 communication"
+    ],
+    "applies_to": [
+     "decision",
+     "cycle",
+     "output"
+    ],
+    "ask_if": {
+     "question": "severity",
+     "equals": "Critical"
+    }
+   }
+  ]
+ },
+ "system_prompt": "You are helping a human annotator. Answer the questions below about each step of an agent run.\n\n## Questions\n\n- **severity**: Did this step cause or contribute to the run's failure? (only on steps of kind: decision, cycle, output)\n    one of: Informational, Warning, Error, Critical\n- **critical_type**: Which kind of critical failure? (only on steps of kind: decision, cycle, output) -- only when severity is Critical\n    one of: Centralized Agent \u2014 Task decomposition, Centralized Agent \u2014 Subtask Generation, Centralized Agent \u2014 Expert Assignment, Centralized Agent \u2014 Response Process, Expert Agent \u2014 reasoning, Expert Agent \u2014 interaction, Expert Agent \u2014 communication\n\nAlso give a short reason for every step.\n\n## Output\n\nReply with JSON only, no commentary:\n\n```json\n{\n  \"steps\": {\n    \"<step key>\": {\n      \"severity\": \"Informational\",\n      \"critical_type\": \"Centralized Agent \\u2014 Task decomposition\",\n      \"reason\": \"one short sentence\"\n    }\n  }\n}\n```\n\nUse the step keys exactly as given. Leave a question out when it does not apply, rather than inventing a value.\n\n## Extra guidance\n\n# Annotation Handbook\n**Multi-agent LLM failure attribution** \u00b7 prompt v7\n\n***\n\n## The Four Labels\n\n| Label | When to use |\n|---|---|\n| **Critical** | Root cause of the final failure. Fixing only this step would likely fix the output. Every failed trajectory must have at least one. Always include a sub-type. |\n| **Error** | Contributes to failure but is not the root cause. Often downstream propagation of a Critical step. Fixing alone may be insufficient. |\n| **Warning** | Redundant or wasteful action \u2014 3rd+ repeated search, extra coordinator round, slightly imprecise answer. No new failure introduced. |\n| **Informational** | Correct and necessary. Should remain unchanged during optimisation. A step can be decisive for success and still be Informational. |\n\n> **Key distinction:** \"Critical\" means critical *error*, never critical *importance*. A correct step, even a decisive one, is always Informational.\n\n***\n\n## Step Definition\n\nEach step bundles **thinking, action, and response** together as one unit and receives a **single label**. However, the reasoning field should specify *which part* within the step caused the issue \u2014 for example:\n\n- \"Thinking was correct (intended to find Director A), but the search query was too broad and returned irrelevant documents.\"\n- \"Search query was well-formed, but retrieved documents were noisy and misled the subsequent reasoning.\"\n\nThis distinction matters for downstream analysis even though the label applies to the whole step. It is the standard definition used across prior work and allows annotations to generalise across different benchmarks and agent architectures.\n\n> **Note on misalignment within a step:** In some cases thinking is correct but the action is wrong (e.g. poor query formulation), or the action happens to be correct despite wrong reasoning. Label the step based on its contribution to the final failure, and explain the internal misalignment in the reasoning field. A step where reasoning is wrong but the action accidentally succeeds is still a risk \u2014 label it at least Warning if relevant.\n\n***\n\n## Decision Flowchart\n\n**Step 0 \u2014 Check the step type first**\n- `think` \u2192 apply Think Step Rules below\n- `answer` / `final_answer` \u2192 label on output quality only; Warning due to search count is forbidden\n- `search_and_info` \u2192 repeated-query rules apply; also apply Restart Rule\n- `coordinator_thinking` / `expert_call` \u2192 continue to Step 1\n\n**Step 1 \u2014 Did something go wrong?**\n- No \u2192 **Informational** (if necessary) or **Warning** (if redundant)\n- Yes \u2192 Step 2\n\n**Step 2 \u2014 Is this the root cause? Would fixing only this step likely fix the final output?**\n- Yes \u2192 **Critical** + sub-type\n- No \u2192 Step 3\n\n**Step 3 \u2014 Did it contribute to the final failure?**\n- Yes \u2192 **Error**\n- No \u2192 **Warning** (wrong but inconsequential)\n\n> **Pro tip:** Work backwards. Read the final answer first, confirm it's wrong, then trace back to find the earliest step where something went wrong \u2014 that's your Critical.\n\n***\n\n## Error Propagation\n\nWhen a Critical step introduces a wrong assumption or wrong result, subsequent steps that follow from that mistake are **Error** (propagation), not Critical. Only assign a second Critical if a **genuinely new and independent failure** is introduced \u2014 not merely a consequence of the first.\n\n```\nExample \u2014 sequential dependency:\n  Step 1  coordinator assigns wrong sub-task          \u2192  Critical (root cause)\n  Step 2  expert follows the wrong sub-task           \u2192  Error    (propagation)\n  Step 3  coordinator uses wrong expert output        \u2192  Error    (propagation)\n  Step 4  final answer built on wrong info            \u2192  Error    (propagation)\n```\n\n> One root Critical, multiple downstream Errors. The cascade rule applies: do not promote a propagated failure to Critical just because it feels significant.\n\n***\n\n## Restart Rule\n\nWhen an agent **retries** a failed approach (e.g. re-issues a search query after getting no useful results), annotate as follows:\n\n| Attempt | Label | Reason |\n|---|---|---|\n| All attempts except the last | **Warning** | Abandoned \u2014 result not used in the final output |\n| The final attempt | **Critical** or **Error** | Its result feeds into the failure |\n\nThe last attempt is Critical if its output is the direct root cause of the wrong final answer. It is Error if a prior Critical introduced the root failure and this attempt merely propagated it.\n\n```\nExample (agent retries a search three times, uses result of 3rd attempt):\n  Search attempt 1  \u2192  Warning   (abandoned)\n  Search attempt 2  \u2192  Warning   (abandoned)\n  Search attempt 3  \u2192  Critical  (result used; wrong documents caused wrong answer)\n```\n\n> **Exception:** If a prior attempt returned misleading documents that the agent *carried forward* into later reasoning (rather than discarding), that attempt may be **Error** or **Critical** rather than Warning \u2014 because it did contribute to the failure.\n\n> **Reconciliation with Search & Info Rules:** The Restart Rule takes precedence when the agent is clearly cycling through attempts and using only the final result. The Search & Info table (Error \u00d7 2, then Warning) applies to cases where no clear \"restart\" pattern is identifiable and all attempts equally feed into the failure.\n\n***\n\n## Search & Info Rules\n\n| Occurrence | Label |\n|---|---|\n| 1st search returns irrelevant docs | **Error** |\n| 2nd search \u2014 identical query, no strategy change | **Error** |\n| 3rd+ search \u2014 same query repeated | **Warning** (pure waste) |\n| Repeated search returns noisy/misleading docs causing wrong answer | **Error** or **Critical** (not Warning) |\n| Repeated query that looks \"correct\" | Still **Warning** \u2014 repetition count alone determines this |\n\n> **Note:** When the agent only uses the final search result to form its answer (standard LLM behaviour), apply the **Restart Rule** instead \u2014 prior attempts become Warning and the final attempt becomes Critical or Error.\n\n***\n\n## Think Step Rules\n\n- **Rule A** \u2014 Almost never Warning. Thinking wastes no external resource. The search that follows may be Warning, but the thought is not.\n- **Rule B** \u2014 Label on reasoning content, not on adjacent searches.\n- **Rule C** \u2014 When in doubt, default to **Informational**. If the reasoning is not demonstrably wrong, it's Informational.\n- **Rule D** \u2014 Think steps inside a Warning search loop are **Informational**. The Warning belongs on the `search_and_info` step, not the `think` step between them.\n\n```\nPattern in a repeated-search loop:\n  [sN]   (search_and_info)  same query          \u2192  Warning       (wasteful action)\n  [sN+1] (think)            \"I'll try again\"    \u2192  Informational (reasoning is fine)\n  [sN+2] (search_and_info)  same query          \u2192  Warning       (wasteful action)\n  [sN+3] (think)            \"Still no results\"  \u2192  Informational (correct interpretation)\n```\n\n***\n\n## Coordinator Rules\n\n### Mid-trajectory transitions\n| Situation | Label |\n|---|---|\n| Correct sub-task framing and assignment | **Informational** |\n| Wrong sub-task or wrong expert \u2014 introduces new failure | **Critical** (Task decomposition or Expert Assignment) |\n| Extra round caused by prior expert failure | **Warning** (wasteful overhead, not a new error) |\n\n### Final answer / final coordinator step\n| Situation | Label |\n|---|---|\n| Had enough correct info from experts but still produced wrong answer | **Critical** (Response Process) |\n| Introduced a new incorrect factor not in any expert output | **Critical** (Response Process) |\n| Merely propagated a prior expert error without adding a new mistake | **Error** |\n\n### Cascade failures\nOnly one step is the root Critical. When a coordinator introduces a false framing, everything downstream that follows it is Error, not Critical. Only assign a second Critical if a genuinely new and independent failure is introduced.\n\n***\n\n## Sequential vs Parallel Chains\n\n**Sequential** (each expert call depends on the previous):\n- An error early propagates to all downstream steps\n- Downstream steps following the wrong assumption \u2192 **Error**\n- Typically one Critical (root) + multiple Errors (propagation)\n\n**Parallel** (coordinator dispatches independent sub-questions):\n- An error in expert A does not affect expert B's independent branch\n- Expert B's steps can be **Informational** even in a failed trajectory\n- Evaluate each branch independently\n- **Multiple Criticals in parallel branches:** If two independent sub-tasks each retrieve a wrong answer, and the final answer fails because of both, both are Critical. The test is: \"Would fixing only this step have fixed the final output?\" If each sub-task is independently necessary, each failure is independently Critical.\n\n```\nExample \u2014 parallel branches, both fail:\n  Expert A retrieves wrong director name    \u2192  Critical (Expert Agent \u2014 interaction)\n  Expert B retrieves wrong birth date       \u2192  Critical (Expert Agent \u2014 interaction)\n  Coordinator combines both wrong answers  \u2192  Error    (propagation)\n```\n\n***\n\n## Self-Correction and Local Correctness\n\nWhen an agent notices a mistake mid-trajectory and attempts to self-correct, the correction may be:\n\n- **Globally correct** \u2014 fixes the actual error and leads toward the right answer \u2192 label the correction step **Informational**\n- **Locally correct but globally wrong** \u2014 the reasoning appears valid in isolation but pursues the wrong direction (e.g. rechecks a sub-answer that was wrong, but reconfirms the wrong value) \u2192 label as **Error** propagation, not Informational\n\n> **Key test:** Is the self-correction working toward the correct final answer, or just internally consistent within a wrong framing? If the latter, it is still a failure step.\n\n***\n\n## Precision Failures\n\nWhen the answer is factually reasonable but too coarse (e.g. \"Mongolia\" instead of \"Khamag Mongol\", \"Wilhelm R\u00f6ntgen\" instead of full name):\n- `answer` and `final_answer` \u2192 **Warning**\n- Upstream reasoning that was logically correct \u2192 **Informational**\n- Do not label the coordinator's correct identification as Critical\n\n***\n\n## Common Pitfalls\n\n| Wrong | Right |\n|---|---|\n| Labelling a correct coordinator step Critical because it was \"important\" to success | Correct + necessary = Informational, always |\n| Labelling think steps Warning because nearby searches are Warning | Think steps in Warning loops are Informational |\n| Multiple Critical labels in a single cascade | One root Critical \u2014 everything downstream following the same mistake \u2192 Error |\n| Labelling a precision failure (too coarse, not wrong) as Error or Critical | Precision failures \u2192 Warning throughout; upstream reasoning \u2192 Informational |\n| Labelling an `answer` step Warning because nearby searches were repeated | Answer steps are never Warning due to search count |\n| Labelling all retry attempts as Critical or Error | Only the final attempt is Critical/Error; prior abandoned attempts are Warning |\n| Labelling a propagated downstream step as Critical | Error propagation \u2260 new Critical; ask whether a genuinely new failure was introduced |\n| Treating a self-correction as Informational when it stays within a wrong framing | Locally correct \u2260 globally correct; test against the final answer direction |\n\n***\n\n## AI Annotation Support\n\nThe built-in AI label suggester (Groq/LLM) operates on documents retrieved within the trajectory. It does **not** have access to external knowledge and may therefore:\n- Fail to detect hallucinations in coordinator thinking (e.g. false Doctor Who framing)\n- Confirm wrong answers that are not contradicted by the retrieved docs\n\n**Workaround:** For knowledge-intensive questions where the trajectory's retrieval clearly failed, verify the golden answer via a manual web search before finalising labels. This is especially important for questions about obscure facts, proper names, or niche cultural knowledge where the agent and the AI suggester may share the same blind spot.\n\n> This limitation will be addressed in a future version by equipping the AI suggester with search capabilities.\n\n***\n\n## Critical Sub-types Reference\n\nEvery Critical label must include one of these sub-types in parentheses.\n\n**Coordinator-level** (`coordinator_thinking`, `expert_call`, `final_answer`):\n- `Centralized Agent \u2014 Task decomposition`\n- `Centralized Agent \u2014 Subtask Generation`\n- `Centralized Agent \u2014 Expert Assignment`\n- `Centralized Agent \u2014 Response Process`\n\n**Expert-level** (`think`, `search_and_info`, `answer`):\n- `Expert Agent \u2014 reasoning`\n- `Expert Agent \u2014 interaction`\n- `Expert Agent \u2014 communication`\n\n**Example format:**\n```\ncoord_r1: Critical (Centralized Agent \u2014 Task decomposition) | Hallucinated Doctor Who framing not present in the question.\n```\n\n***\n\n*For internal use \u2014 annotation team \u00b7 prompt v7 \u00b7 who&when benchmark*\n\nAnswer severity with the bare label only. When it is Critical, give the sub-type in critical_type, not inside the severity value.",
+ "runs": {
+  "0": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The coordinator pursued a broad list of actors instead of directly identifying KWPW's owner, creating an unnecessary branch."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The broad search returned no useful actor names and was ultimately abandoned."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated essentially the same unproductive search without a meaningful strategy change."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This was another redundant repetition of the same unproductive search."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The repeated search did not support the Charlie Chaplin answer, which was subsequently discarded."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The coordinator correctly rejected Charlie Chaplin but initiated another unnecessary broad actor search."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The search again returned only generic material and no useful candidate."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated the same ineffective query without changing strategy."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This was a third redundant search using the same ineffective query."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The search remained unproductive and did not support the Marlon Brando answer, which was discarded."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The coordinator introduced an irrelevant Jack Nicholson reference, though it then chose the correct direct lookup."
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The direct search correctly retrieved that KWPW is owned by Bill McCutcheon."
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The expert correctly extracted and reported Bill McCutcheon from the retrieved evidence."
+    },
+    "coord_r4": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator appropriately requested verification that Bill McCutcheon was also an American character actor."
+    },
+    "expert_ci3_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The initial verification search returned irrelevant documents and did not establish the actor connection."
+    },
+    "expert_ci3_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The expert incorrectly inferred that no such actor existed from inconclusive results, then continued searching."
+    },
+    "expert_ci3_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The reasoning cited an unsupported software-engineer claim, although the resulting yes answer happened to be correct."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The final answer exactly matches the expected answer, Bill McCutcheon."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 1157,
+    "totalTokens": 8952,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 7793
+   },
+   "seconds": 13.85,
+   "expected": 18,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The coordinator pursued a broad list of actors instead of directly identifying KWPW's owner, creating an unnecessary branch.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The broad search returned no useful actor names and was ultimately abandoned.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated essentially the same unproductive search without a meaningful strategy change.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This was another redundant repetition of the same unproductive search.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The repeated search did not support the Charlie Chaplin answer, which was subsequently discarded.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The coordinator correctly rejected Charlie Chaplin but initiated another unnecessary broad actor search.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The search again returned only generic material and no useful candidate.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated the same ineffective query without changing strategy.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This was a third redundant search using the same ineffective query.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The search remained unproductive and did not support the Marlon Brando answer, which was discarded.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The coordinator introduced an irrelevant Jack Nicholson reference, though it then chose the correct direct lookup.\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The direct search correctly retrieved that KWPW is owned by Bill McCutcheon.\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The expert correctly extracted and reported Bill McCutcheon from the retrieved evidence.\"\n    },\n    \"coord_r4\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator appropriately requested verification that Bill McCutcheon was also an American character actor.\"\n    },\n    \"expert_ci3_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The initial verification search returned irrelevant documents and did not establish the actor connection.\"\n    },\n    \"expert_ci3_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The expert incorrectly inferred that no such actor existed from inconclusive results, then continued searching.\"\n    },\n    \"expert_ci3_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The reasoning cited an unsupported software-engineer claim, although the resulting yes answer happened to be correct.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The final answer exactly matches the expected answer, Bill McCutcheon.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "1": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly decomposed the question into identifying the pianist and determining their lineage."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The initial search returned irrelevant documents and did not establish the pianist's identity."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The revised search still produced no evidence that Sebasti\u00e1n Colombo was taught by Maria Curcio."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This substantially repeated the preceding unproductive search without a meaningful strategy change."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The repeated search remained irrelevant and the resulting identification of Sebasti\u00e1n Colombo was unsupported."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The coordinator pursued the unsupported Sebasti\u00e1n Colombo identification, though this did not prevent the correct final answer."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The search results concerned unrelated people named Colombo and did not verify Sebasti\u00e1n Colombo's lineage."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This exactly repeated the same unproductive query and returned the same irrelevant evidence."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This was a third identical search that added no relevant evidence."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Removing the accent did not improve retrieval, and the answer remained unsupported by the documents."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The final answer exactly matches the expected answer."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 921,
+    "totalTokens": 7764,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 6841
+   },
+   "seconds": 12.73,
+   "expected": 11,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly decomposed the question into identifying the pianist and determining their lineage.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The initial search returned irrelevant documents and did not establish the pianist's identity.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The revised search still produced no evidence that Sebasti\u00e1n Colombo was taught by Maria Curcio.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This substantially repeated the preceding unproductive search without a meaningful strategy change.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The repeated search remained irrelevant and the resulting identification of Sebasti\u00e1n Colombo was unsupported.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The coordinator pursued the unsupported Sebasti\u00e1n Colombo identification, though this did not prevent the correct final answer.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The search results concerned unrelated people named Colombo and did not verify Sebasti\u00e1n Colombo's lineage.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This exactly repeated the same unproductive query and returned the same irrelevant evidence.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This was a third identical search that added no relevant evidence.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Removing the accent did not improve retrieval, and the answer remained unsupported by the documents.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The final answer exactly matches the expected answer.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "2": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "It hallucinated a Doctor Who framing and delegated the wrong question instead of identifying Mick Carter as the EastEnders landlord."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The expert followed the false framing and failed to act on retrieved evidence explicitly identifying Mick Carter with EastEnders and the Queen Victoria."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "It repeated the misframed search and again ignored the retrieved corrective evidence."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This was a third substantially identical search that added no useful information."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "It redundantly repeated the same search despite already having corrective evidence."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "It continued the unchanged and unproductive search loop."
+    },
+    "expert_ci0_cycle5": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "It redundantly repeated the same query and retrieval."
+    },
+    "expert_ci0_cycle6": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "It continued searching without changing strategy or using the EastEnders evidence."
+    },
+    "expert_ci0_cycle7": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This was another wasteful repetition of the same failed approach."
+    },
+    "expert_ci0_cycle8": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "It repeated the same query yet again without making progress."
+    },
+    "expert_ci0_cycle9": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The final failed attempt preserved the false framing and led directly to termination without an answer."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "It propagated the original false Doctor Who premise and incorrectly inferred that no address existed."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The response propagated the false framing and failed to provide the correct address, 46 Albert Square, Walford, London E20."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 1265,
+    "totalTokens": 8944,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 7677
+   },
+   "seconds": 15.79,
+   "expected": 13,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"It hallucinated a Doctor Who framing and delegated the wrong question instead of identifying Mick Carter as the EastEnders landlord.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The expert followed the false framing and failed to act on retrieved evidence explicitly identifying Mick Carter with EastEnders and the Queen Victoria.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"It repeated the misframed search and again ignored the retrieved corrective evidence.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This was a third substantially identical search that added no useful information.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"It redundantly repeated the same search despite already having corrective evidence.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"It continued the unchanged and unproductive search loop.\"\n    },\n    \"expert_ci0_cycle5\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"It redundantly repeated the same query and retrieval.\"\n    },\n    \"expert_ci0_cycle6\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"It continued searching without changing strategy or using the EastEnders evidence.\"\n    },\n    \"expert_ci0_cycle7\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This was another wasteful repetition of the same failed approach.\"\n    },\n    \"expert_ci0_cycle8\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"It repeated the same query yet again without making progress.\"\n    },\n    \"expert_ci0_cycle9\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The final failed attempt preserved the false framing and led directly to termination without an answer.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"It propagated the original false Doctor Who premise and incorrectly inferred that no address existed.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The response propagated the false framing and failed to provide the correct address, 46 Albert Square, Walford, London E20.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "3": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "It incorrectly identified Genghis Khan as Tem\u00fcge's father, producing the wrong subquestion."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This initial search attempt was superseded by a retry and was not the final evidence used."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The final search propagated the coordinator's wrong subtask and returned misleading evidence for Mongolia."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "It concluded Mongolia from the erroneous framing and retrieval instead of answering about Tem\u00fcge's actual father."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the expert's incorrect answer rather than providing Khamag Mongol."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 930,
+    "totalTokens": 5069,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 4137
+   },
+   "seconds": 14.13,
+   "expected": 5,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"It incorrectly identified Genghis Khan as Tem\u00fcge's father, producing the wrong subquestion.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This initial search attempt was superseded by a retry and was not the final evidence used.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The final search propagated the coordinator's wrong subtask and returned misleading evidence for Mongolia.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"It concluded Mongolia from the erroneous framing and retrieval instead of answering about Tem\u00fcge's actual father.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the expert's incorrect answer rather than providing Khamag Mongol.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "4": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly identified Miami and delegated an appropriate verification question."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The initial search was reasonable and the expert ultimately pursued the correct location."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The expert unnecessarily repeated the identical search after receiving unhelpful results."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This was another redundant identical search with no strategy change."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated the same ineffective query and added no useful information."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The unchanged search was wasteful and returned the same irrelevant documents."
+    },
+    "expert_ci0_cycle5": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The expert again repeated an ineffective query without refining the search."
+    },
+    "expert_ci0_cycle6": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The final repeated search was unnecessary, although the expert supplied the correct answer."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The final answer Miami exactly matches the expected city."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 576,
+    "totalTokens": 6670,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 6092
+   },
+   "seconds": 7.3,
+   "expected": 9,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly identified Miami and delegated an appropriate verification question.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The initial search was reasonable and the expert ultimately pursued the correct location.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The expert unnecessarily repeated the identical search after receiving unhelpful results.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This was another redundant identical search with no strategy change.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated the same ineffective query and added no useful information.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The unchanged search was wasteful and returned the same irrelevant documents.\"\n    },\n    \"expert_ci0_cycle5\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The expert again repeated an ineffective query without refining the search.\"\n    },\n    \"expert_ci0_cycle6\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The final repeated search was unnecessary, although the expert supplied the correct answer.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The final answer Miami exactly matches the expected city.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "5": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly decomposed the comparison by requesting the date of the Battle of Manila."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The search returned irrelevant documents and did not substantiate the correct date."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated the same unsuccessful search without changing strategy."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated the same unsuccessful search a third time without refinement."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Continued the redundant search loop with unchanged irrelevant results."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Continued repeating an unproductive query despite unchanged results."
+    },
+    "expert_ci0_cycle5": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The final repeated search remained unsupported by the retrieved documents, though its answer was correct."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly accepted the Manila date and requested the Battle of Guam date."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The search returned irrelevant documents and did not substantiate the correct Guam date."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated the same unsuccessful search without changing strategy."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated the same unsuccessful search a third time without refinement."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Continued the redundant search loop with unchanged irrelevant results."
+    },
+    "expert_ci1_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The final repeated search remained unsupported by the retrieved documents, though its answer was correct."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly compared 1941 with 1945 and concluded that the Battle of Guam occurred first."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The final answer exactly matches the expected answer."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 771,
+    "totalTokens": 8347,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 7574
+   },
+   "seconds": 8.92,
+   "expected": 15,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly decomposed the comparison by requesting the date of the Battle of Manila.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The search returned irrelevant documents and did not substantiate the correct date.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated the same unsuccessful search without changing strategy.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated the same unsuccessful search a third time without refinement.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Continued the redundant search loop with unchanged irrelevant results.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Continued repeating an unproductive query despite unchanged results.\"\n    },\n    \"expert_ci0_cycle5\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The final repeated search remained unsupported by the retrieved documents, though its answer was correct.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly accepted the Manila date and requested the Battle of Guam date.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The search returned irrelevant documents and did not substantiate the correct Guam date.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated the same unsuccessful search without changing strategy.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated the same unsuccessful search a third time without refinement.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Continued the redundant search loop with unchanged irrelevant results.\"\n    },\n    \"expert_ci1_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The final repeated search remained unsupported by the retrieved documents, though its answer was correct.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly compared 1941 with 1945 and concluded that the Battle of Guam occurred first.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The final answer exactly matches the expected answer.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "6": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "It incorrectly reframed the title as the animated series instead of the 1981 film directed by Steve Gordon."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This initial noisy search was abandoned and did not directly supply the final answer."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated noisy search was abandoned without improving the retrieval strategy."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "It produced the unsupported answer Marc Lawrence while operating under the coordinator's incorrect framing."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "It propagated the expert's incorrect answer rather than identifying Steve Gordon."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 412,
+    "totalTokens": 4726,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 4312
+   },
+   "seconds": 6.04,
+   "expected": 5,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"It incorrectly reframed the title as the animated series instead of the 1981 film directed by Steve Gordon.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This initial noisy search was abandoned and did not directly supply the final answer.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated noisy search was abandoned without improving the retrieval strategy.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"It produced the unsupported answer Marc Lawrence while operating under the coordinator's incorrect framing.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"It propagated the expert's incorrect answer rather than identifying Steve Gordon.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "7": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly decomposed the comparison into identifying each director and birth date."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search was abandoned when the coordinator later retried the subtask."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search was an abandoned retry and did not supply the final result."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The identical unsuccessful query was redundant and ultimately abandoned."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful attempt was superseded by the coordinator's later retry of the same subtask."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Proceeding to the other required film after the first lookup failed was a reasonable strategy."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This noisy search was abandoned in favor of later retries."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated noisy search was abandoned and did not directly provide the returned answer."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful retry was superseded by the final search attempt."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "The final search used irrelevant documents to return the unsupported and incorrect director Manish Pandey."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the incorrect director identification by requesting Manish Pandey's birth date."
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This search retrieved a different person and was abandoned before the final attempt."
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated noisy search was superseded by later retries."
+    },
+    "expert_ci2_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This identical unsuccessful search was redundant and abandoned."
+    },
+    "expert_ci2_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The expert returned an unsupported birth year from documents about another person, propagating the earlier wrong identity."
+    },
+    "coord_r4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator retained the false Manish Pandey information while retrying the unresolved director lookup."
+    },
+    "expert_ci3_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search was superseded by subsequent attempts in the same retry sequence."
+    },
+    "expert_ci3_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This noisy search was an abandoned retry."
+    },
+    "expert_ci3_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated query was superseded by the final attempt."
+    },
+    "expert_ci3_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "The final retrieval again returned irrelevant documents and failed to identify the required director, directly leaving the comparison unresolved."
+    },
+    "coord_r5": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the expert lookup failure by concluding that the question could not be answered."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The response incorrectly states that information is insufficient instead of answering Badhti Ka Naam Dadhi."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 2020,
+    "totalTokens": 13099,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 11077
+   },
+   "seconds": 27.23,
+   "expected": 22,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly decomposed the comparison into identifying each director and birth date.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search was abandoned when the coordinator later retried the subtask.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search was an abandoned retry and did not supply the final result.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The identical unsuccessful query was redundant and ultimately abandoned.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful attempt was superseded by the coordinator's later retry of the same subtask.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Proceeding to the other required film after the first lookup failed was a reasonable strategy.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This noisy search was abandoned in favor of later retries.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated noisy search was abandoned and did not directly provide the returned answer.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful retry was superseded by the final search attempt.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"The final search used irrelevant documents to return the unsupported and incorrect director Manish Pandey.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the incorrect director identification by requesting Manish Pandey's birth date.\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This search retrieved a different person and was abandoned before the final attempt.\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated noisy search was superseded by later retries.\"\n    },\n    \"expert_ci2_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This identical unsuccessful search was redundant and abandoned.\"\n    },\n    \"expert_ci2_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The expert returned an unsupported birth year from documents about another person, propagating the earlier wrong identity.\"\n    },\n    \"coord_r4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator retained the false Manish Pandey information while retrying the unresolved director lookup.\"\n    },\n    \"expert_ci3_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search was superseded by subsequent attempts in the same retry sequence.\"\n    },\n    \"expert_ci3_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This noisy search was an abandoned retry.\"\n    },\n    \"expert_ci3_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated query was superseded by the final attempt.\"\n    },\n    \"expert_ci3_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"The final retrieval again returned irrelevant documents and failed to identify the required director, directly leaving the comparison unresolved.\"\n    },\n    \"coord_r5\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the expert lookup failure by concluding that the question could not be answered.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The response incorrectly states that information is insufficient instead of answering Badhti Ka Naam Dadhi.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "8": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly framed and delegated the factual question."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The initial search returned irrelevant documents, but they did not cause an incorrect answer."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The retry again returned irrelevant documents and was ultimately abandoned."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated search added no useful evidence and was wasteful."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The final repeated search remained irrelevant, although the expert still supplied the correct answer."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The final answer exactly matches the expected answer."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 382,
+    "totalTokens": 5357,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 4973
+   },
+   "seconds": 5.13,
+   "expected": 6,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly framed and delegated the factual question.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The initial search returned irrelevant documents, but they did not cause an incorrect answer.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The retry again returned irrelevant documents and was ultimately abandoned.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated search added no useful evidence and was wasteful.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The final repeated search remained irrelevant, although the expert still supplied the correct answer.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The final answer exactly matches the expected answer.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "9": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator appropriately recognized the title's ambiguity and delegated identification of the work."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The broad search returned irrelevant results and was abandoned."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The revised search remained unproductive and was superseded by another attempt."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated the same ineffective query without obtaining relevant evidence."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "The expert fabricated that \"Five Years\" was a Pink Floyd song despite having retrieved no supporting evidence."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the expert's false Pink Floyd identification into the next subtask."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search under the inherited false premise was abandoned."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The expert repeated the same ineffective search and did not use its results."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This was another redundant, unproductive search attempt that was superseded."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The expert propagated the false Pink Floyd premise and answered Roger Waters without supporting evidence."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The final answer repeated the downstream wrong result instead of identifying David Bowie."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 1531,
+    "totalTokens": 7839,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 6306
+   },
+   "seconds": 21.67,
+   "expected": 11,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator appropriately recognized the title's ambiguity and delegated identification of the work.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The broad search returned irrelevant results and was abandoned.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The revised search remained unproductive and was superseded by another attempt.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated the same ineffective query without obtaining relevant evidence.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"The expert fabricated that \\\"Five Years\\\" was a Pink Floyd song despite having retrieved no supporting evidence.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the expert's false Pink Floyd identification into the next subtask.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search under the inherited false premise was abandoned.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The expert repeated the same ineffective search and did not use its results.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This was another redundant, unproductive search attempt that was superseded.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The expert propagated the false Pink Floyd premise and answered Roger Waters without supporting evidence.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The final answer repeated the downstream wrong result instead of identifying David Bowie.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "10": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The reasoning incorrectly framed the target as Eastern European, but the delegated question itself remained neutral and did not cause the final error."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search returned irrelevant documents and was superseded by later attempts."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This revised search also returned irrelevant documents and was abandoned."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated unsuccessful search was superseded by the final attempt."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "The final search relied on an irrelevant mythology result mentioning Greece and used it to produce the wrong answer."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the expert's incorrect answer of Greece instead of Iceland."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 537,
+    "totalTokens": 5481,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 4942
+   },
+   "seconds": 8.36,
+   "expected": 6,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The reasoning incorrectly framed the target as Eastern European, but the delegated question itself remained neutral and did not cause the final error.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search returned irrelevant documents and was superseded by later attempts.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This revised search also returned irrelevant documents and was abandoned.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated unsuccessful search was superseded by the final attempt.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"The final search relied on an irrelevant mythology result mentioning Greece and used it to produce the wrong answer.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the expert's incorrect answer of Greece instead of Iceland.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "11": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly framed the question and assigned it to an appropriate media expert."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search was abandoned and did not supply the final answer."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This misleading search result was followed by further retries rather than directly used as the final attempt."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The expert redundantly repeated the same ineffective query before another attempt."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "The final search relied on irrelevant class-discrimination documents and produced the wrong answer instead of censorship."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the expert's incorrect answer without independent verification."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 504,
+    "totalTokens": 5566,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 5060
+   },
+   "seconds": 7.7,
+   "expected": 6,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly framed the question and assigned it to an appropriate media expert.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search was abandoned and did not supply the final answer.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This misleading search result was followed by further retries rather than directly used as the final attempt.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The expert redundantly repeated the same ineffective query before another attempt.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"The final search relied on irrelevant class-discrimination documents and produced the wrong answer instead of censorship.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the expert's incorrect answer without independent verification.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "12": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly identified an orison as a formal prayer or devotional act."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The response accurately states that performing an orison means offering a prayer, despite the recorded false outcome."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 609,
+    "totalTokens": 3939,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 3328
+   },
+   "seconds": 8.89,
+   "expected": 2,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly identified an orison as a formal prayer or devotional act.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The response accurately states that performing an orison means offering a prayer, despite the recorded false outcome.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "13": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly decomposed the comparison into obtaining the first film's release date."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search returned irrelevant documents and was abandoned in favor of later attempts."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated identical search remained irrelevant and was superseded by the final attempt."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "The expert used an unrelated operating-system date to falsely report Ayat-Ayat Cinta 2 as released on September 12, 2018."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the false 2018 date, although asking for the other film's date was appropriate."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This initial search retrieved irrelevant material and was abandoned."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This retry still returned irrelevant documents and was superseded by later attempts."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This identical repeated search was wasteful and was not the final result used."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "The expert inferred a false 1997 release date from an unrelated document mentioning an HIV case in 1997."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Although it selected Lost Kisses, the response propagated both fabricated release dates as factual support."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 1258,
+    "totalTokens": 7362,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 6102
+   },
+   "seconds": 16.89,
+   "expected": 10,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly decomposed the comparison into obtaining the first film's release date.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search returned irrelevant documents and was abandoned in favor of later attempts.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated identical search remained irrelevant and was superseded by the final attempt.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"The expert used an unrelated operating-system date to falsely report Ayat-Ayat Cinta 2 as released on September 12, 2018.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the false 2018 date, although asking for the other film's date was appropriate.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This initial search retrieved irrelevant material and was abandoned.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This retry still returned irrelevant documents and was superseded by later attempts.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This identical repeated search was wasteful and was not the final result used.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"The expert inferred a false 1997 release date from an unrelated document mentioning an HIV case in 1997.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Although it selected Lost Kisses, the response propagated both fabricated release dates as factual support.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "14": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly identified the intended 1986 film and formulated the appropriate subtask."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search was abandoned in favor of later retries."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated unsuccessful search was abandoned and did not supply the final answer."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated unsuccessful search was abandoned and added no useful information."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated unsuccessful search was abandoned and added no useful information."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated unsuccessful search was abandoned and added no useful information."
+    },
+    "expert_ci0_cycle5": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "The expert inferred Jerry Goldsmith without supporting evidence from the irrelevant results, instead of the correct composer Howard Shore."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the expert's incorrect answer without introducing an independent error."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 564,
+    "totalTokens": 6409,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 5843
+   },
+   "seconds": 7.36,
+   "expected": 8,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly identified the intended 1986 film and formulated the appropriate subtask.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search was abandoned in favor of later retries.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated unsuccessful search was abandoned and did not supply the final answer.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated unsuccessful search was abandoned and added no useful information.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated unsuccessful search was abandoned and added no useful information.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated unsuccessful search was abandoned and added no useful information.\"\n    },\n    \"expert_ci0_cycle5\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"The expert inferred Jerry Goldsmith without supporting evidence from the irrelevant results, instead of the correct composer Howard Shore.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the expert's incorrect answer without introducing an independent error.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "15": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly decomposed the comparison into retrieving each person's birth date."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The initial Mickey Hart search did not retrieve his birth date and was superseded by later attempts."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The repeated search still lacked the requested birth date and was abandoned."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The cycle produced a malformed and unsupported Mickey Hart date, but correcting it would not change the failed comparison."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The coordinator incorrectly expanded the malformed Mickey Hart response into October 2, 1948, though this did not determine the wrong comparison."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "The broad search returned unrelated people and initiated the false identification of Tony Owen as a racing driver."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The expert propagated the false racing-driver identity and retrieved irrelevant Arthur Owen documents."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The expert repeated the same misidentified search strategy without obtaining evidence about Tony Owen."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The expert continued the erroneous identity framing and supplied an unsupported 20 July 1931 birth date."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the incorrect Tony Owen birth date and therefore selected Mickey Hart instead of Tony Owen."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 1783,
+    "totalTokens": 7996,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 6211
+   },
+   "seconds": 25.71,
+   "expected": 10,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly decomposed the comparison into retrieving each person's birth date.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The initial Mickey Hart search did not retrieve his birth date and was superseded by later attempts.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The repeated search still lacked the requested birth date and was abandoned.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The cycle produced a malformed and unsupported Mickey Hart date, but correcting it would not change the failed comparison.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The coordinator incorrectly expanded the malformed Mickey Hart response into October 2, 1948, though this did not determine the wrong comparison.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"The broad search returned unrelated people and initiated the false identification of Tony Owen as a racing driver.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The expert propagated the false racing-driver identity and retrieved irrelevant Arthur Owen documents.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The expert repeated the same misidentified search strategy without obtaining evidence about Tony Owen.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The expert continued the erroneous identity framing and supplied an unsupported 20 July 1931 birth date.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the incorrect Tony Owen birth date and therefore selected Mickey Hart instead of Tony Owen.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "16": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly framed the occupation lookup and assigned it to an appropriate expert."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The search returned documents about similarly named people, but this result was ultimately rejected."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated the same ineffective query without changing strategy and was not used in the final answer."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This was another redundant repetition of the same unsuccessful search."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The cycle inferred commandant from irrelevant documents, but the coordinator subsequently rejected that answer."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly identified that commandant was likely a name-matching error and requested verification."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The revised search still retrieved material about Shamoon Alam Khan rather than Adil Shamoo."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The expert incorrectly concluded naval officer from mismatched documents, but the coordinator rejected this result."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "The coordinator introduced unsupported and incorrect biographical claims instead of identifying Adil Shamoo as a biochemist."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The final answer propagated the coordinator's incorrect occupation rather than giving biochemist or biological chemist."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 747,
+    "totalTokens": 6428,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 5679
+   },
+   "seconds": 9.43,
+   "expected": 10,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly framed the occupation lookup and assigned it to an appropriate expert.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The search returned documents about similarly named people, but this result was ultimately rejected.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated the same ineffective query without changing strategy and was not used in the final answer.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This was another redundant repetition of the same unsuccessful search.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The cycle inferred commandant from irrelevant documents, but the coordinator subsequently rejected that answer.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly identified that commandant was likely a name-matching error and requested verification.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The revised search still retrieved material about Shamoon Alam Khan rather than Adil Shamoo.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The expert incorrectly concluded naval officer from mismatched documents, but the coordinator rejected this result.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"The coordinator introduced unsupported and incorrect biographical claims instead of identifying Adil Shamoo as a biochemist.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The final answer propagated the coordinator's incorrect occupation rather than giving biochemist or biological chemist.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "17": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Delegating the exact entertainment-related question to the domain expert was appropriate despite calling Trauma a television series."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful broad search was abandoned in favor of later attempts."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search was abandoned and did not directly support the final answer."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated unsuccessful search was abandoned before the final attempt."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "The final broad search retrieved irrelevant documents, yet the expert returned the unsupported and incorrect name Jeff Melman."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the expert's incorrect answer instead of the expected producers Dario Argento and Sirio Bernadotte."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 704,
+    "totalTokens": 5242,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 4536
+   },
+   "seconds": 10.25,
+   "expected": 6,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Delegating the exact entertainment-related question to the domain expert was appropriate despite calling Trauma a television series.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful broad search was abandoned in favor of later attempts.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search was abandoned and did not directly support the final answer.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated unsuccessful search was abandoned before the final attempt.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"The final broad search retrieved irrelevant documents, yet the expert returned the unsupported and incorrect name Jeff Melman.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the expert's incorrect answer instead of the expected producers Dario Argento and Sirio Bernadotte.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "18": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly identified the novel from the characters, author, and publication year."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The final answer exactly matches the accepted title."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 81,
+    "totalTokens": 3514,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 3431
+   },
+   "seconds": 1.4,
+   "expected": 2,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly identified the novel from the characters, author, and publication year.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The final answer exactly matches the accepted title.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "19": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly identified gunwale from its nautical definition and artillery-derived etymology."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The answer exactly matches an accepted expected answer."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 82,
+    "totalTokens": 3477,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 3393
+   },
+   "seconds": 1.63,
+   "expected": 2,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly identified gunwale from its nautical definition and artillery-derived etymology.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The answer exactly matches an accepted expected answer.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "20": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly decomposed the genealogical question and delegated it appropriately."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "The search results referred to Charles \"Nish\" Bruce, and the expert failed to disambiguate him from the queried Charles Andrew Bruce."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The expert reinforced the earlier mistaken identity by searching only for the already-selected incorrect grandfather."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the expert's incorrect answer without introducing an independent mistake."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 324,
+    "totalTokens": 4461,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 4135
+   },
+   "seconds": 4.37,
+   "expected": 4,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly decomposed the genealogical question and delegated it appropriately.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"The search results referred to Charles \\\"Nish\\\" Bruce, and the expert failed to disambiguate him from the queried Charles Andrew Bruce.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The expert reinforced the earlier mistaken identity by searching only for the already-selected incorrect grandfather.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the expert's incorrect answer without introducing an independent mistake.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "21": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "The coordinator reversed the family relationships and incorrectly concluded that Liszt married Cosima rather than recognizing her as his daughter who married Richard Wagner."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The answer propagates the coordinator's mistaken relationship reasoning by naming Hans von B\u00fclow instead of Richard Wagner."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 219,
+    "totalTokens": 3513,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 3292
+   },
+   "seconds": 4.6,
+   "expected": 2,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"The coordinator reversed the family relationships and incorrectly concluded that Liszt married Cosima rather than recognizing her as his daughter who married Richard Wagner.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The answer propagates the coordinator's mistaken relationship reasoning by naming Hans von B\u00fclow instead of Richard Wagner.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "22": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator decomposed the question into a reasonable stadium-identification subtask."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search attempt was abandoned when the expert retried the same query."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated unsuccessful search was superseded by later attempts."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This was another redundant identical search whose result was not independently used."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated search added no useful evidence and was superseded by the final attempt."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "The final search failed to retrieve Ross County and produced Kilmarnock despite evidence that Kilmarnock plays at Rugby Park, establishing the wrong team."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the incorrect Kilmarnock identification by treating it as the Victoria Park team."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This nickname search was abandoned when the expert repeated the same query."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This identical repeated search was redundant and superseded by later attempts."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This additional duplicate search provided no new information and was not the final used attempt."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This was another wasteful retry of the same nickname query."
+    },
+    "expert_ci1_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Although it correctly found Kilmarnock's nickname, it reinforced the irrelevant Kilmarnock branch created by the earlier failure."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the mistaken Kilmarnock framing into the unsupported conclusion that no team matched both clues."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The final response propagated the earlier retrieval failure and incorrectly denied that Ross County matches the clues."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 1450,
+    "totalTokens": 9064,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 7612
+   },
+   "seconds": 18.93,
+   "expected": 14,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator decomposed the question into a reasonable stadium-identification subtask.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search attempt was abandoned when the expert retried the same query.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated unsuccessful search was superseded by later attempts.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This was another redundant identical search whose result was not independently used.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated search added no useful evidence and was superseded by the final attempt.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"The final search failed to retrieve Ross County and produced Kilmarnock despite evidence that Kilmarnock plays at Rugby Park, establishing the wrong team.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the incorrect Kilmarnock identification by treating it as the Victoria Park team.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This nickname search was abandoned when the expert repeated the same query.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This identical repeated search was redundant and superseded by later attempts.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This additional duplicate search provided no new information and was not the final used attempt.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This was another wasteful retry of the same nickname query.\"\n    },\n    \"expert_ci1_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Although it correctly found Kilmarnock's nickname, it reinforced the irrelevant Kilmarnock branch created by the earlier failure.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the mistaken Kilmarnock framing into the unsupported conclusion that no team matched both clues.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The final response propagated the earlier retrieval failure and incorrectly denied that Ross County matches the clues.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "23": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "It misread the exact film title as a reference to the broader series and asked for the series director."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This irrelevant search attempt was ultimately abandoned and did not inform the final answer."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "It redundantly repeated the same ineffective search, and its result was later rejected."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "It redundantly repeated the same ineffective search, and its result was later rejected."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "It redundantly repeated the same ineffective search, and its result was later rejected."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "It produced an unsupported director name, but the coordinator explicitly rejected it."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "It preserved the original series-level misframing and repeated the same incorrect subtask."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This irrelevant search attempt was ultimately abandoned and did not inform the final answer."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "It redundantly repeated the same ineffective search, and its result was later rejected."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "It redundantly repeated the same ineffective search, and its result was later rejected."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "It redundantly repeated the same ineffective search, and its result was later rejected."
+    },
+    "expert_ci1_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "It produced another unsupported director name, but the coordinator explicitly rejected it."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "It propagated the initial misframing by selecting Frank Tuttle rather than the director of the specific film."
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This initial search retrieved a different person named Tuttle and was superseded by later attempts."
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful retry again retrieved the wrong Tuttle and was superseded by the final attempt."
+    },
+    "expert_ci2_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The final search confused Frank Tuttle with Magruder Tuttle and supplied the unsupported birthplace used in the answer."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "It propagated the earlier wrong-director and wrong-person errors into an incorrect birthplace."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 1875,
+    "totalTokens": 10704,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 8827
+   },
+   "seconds": 23.79,
+   "expected": 17,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"It misread the exact film title as a reference to the broader series and asked for the series director.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This irrelevant search attempt was ultimately abandoned and did not inform the final answer.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"It redundantly repeated the same ineffective search, and its result was later rejected.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"It redundantly repeated the same ineffective search, and its result was later rejected.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"It redundantly repeated the same ineffective search, and its result was later rejected.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"It produced an unsupported director name, but the coordinator explicitly rejected it.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"It preserved the original series-level misframing and repeated the same incorrect subtask.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This irrelevant search attempt was ultimately abandoned and did not inform the final answer.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"It redundantly repeated the same ineffective search, and its result was later rejected.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"It redundantly repeated the same ineffective search, and its result was later rejected.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"It redundantly repeated the same ineffective search, and its result was later rejected.\"\n    },\n    \"expert_ci1_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"It produced another unsupported director name, but the coordinator explicitly rejected it.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"It propagated the initial misframing by selecting Frank Tuttle rather than the director of the specific film.\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This initial search retrieved a different person named Tuttle and was superseded by later attempts.\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful retry again retrieved the wrong Tuttle and was superseded by the final attempt.\"\n    },\n    \"expert_ci2_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The final search confused Frank Tuttle with Magruder Tuttle and supplied the unsupported birthplace used in the answer.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"It propagated the earlier wrong-director and wrong-person errors into an incorrect birthplace.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "24": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The reasoning correctly identifies the right ventricle as the source of blood entering the pulmonary trunk."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The answer accurately matches the expected answer despite the recorded false outcome."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 113,
+    "totalTokens": 3343,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 3228
+   },
+   "seconds": 1.84,
+   "expected": 2,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The reasoning correctly identifies the right ventricle as the source of blood entering the pulmonary trunk.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The answer accurately matches the expected answer despite the recorded false outcome.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "25": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly framed the question and assigned it to a suitable expert."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The search retrieved a source explicitly identifying the Ansonia Hotel as housing the Continental Baths."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This additional search was unnecessary because the first search had already provided the answer."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated search added no useful information beyond the evidence already retrieved."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The final answer exactly matches the expected answer."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 239,
+    "totalTokens": 4960,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 4719
+   },
+   "seconds": 3.99,
+   "expected": 5,
+   "raw": "{\"steps\":{\"coord_r1\":{\"severity\":\"Informational\",\"reason\":\"Correctly framed the question and assigned it to a suitable expert.\"},\"expert_ci0_cycle0\":{\"severity\":\"Informational\",\"reason\":\"The search retrieved a source explicitly identifying the Ansonia Hotel as housing the Continental Baths.\"},\"expert_ci0_cycle1\":{\"severity\":\"Warning\",\"reason\":\"This additional search was unnecessary because the first search had already provided the answer.\"},\"expert_ci0_cycle2\":{\"severity\":\"Warning\",\"reason\":\"This repeated search added no useful information beyond the evidence already retrieved.\"},\"final_answer\":{\"severity\":\"Informational\",\"reason\":\"The final answer exactly matches the expected answer.\"}}}",
+   "temperature": null
+  },
+  "26": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly framed the question and assigned it to an appropriate cultural and music expert."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search attempt returned irrelevant documents and was superseded by later retries."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated identical search was unsuccessful and was superseded by later retries."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated identical search was unsuccessful and was superseded by the final attempt."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "The final search returned irrelevant evidence, yet the expert inferred Joe Hill instead of the correct writer, Kostas."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the expert's incorrect answer without introducing a new independent error."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 357,
+    "totalTokens": 5129,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 4770
+   },
+   "seconds": 4.52,
+   "expected": 6,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly framed the question and assigned it to an appropriate cultural and music expert.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search attempt returned irrelevant documents and was superseded by later retries.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated identical search was unsuccessful and was superseded by later retries.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated identical search was unsuccessful and was superseded by the final attempt.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"The final search returned irrelevant evidence, yet the expert inferred Joe Hill instead of the correct writer, Kostas.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the expert's incorrect answer without introducing a new independent error.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "27": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "It conflated physically opening the church with managing it, directing the run away from identifying the Nusaybah family."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search returned irrelevant documents and was abandoned in favor of later attempts."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search returned irrelevant documents and was abandoned in favor of later attempts."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated an earlier unsuccessful query and was not the result ultimately used."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated an earlier unsuccessful query and was not the result ultimately used."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The final search produced no supporting evidence yet concluded that the Franciscans open the church, propagating the coordinator's misframing."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "It continued the original conflation by asking about custodial arrangements rather than the Muslim family responsible for opening the doors."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search returned irrelevant documents and was abandoned in favor of later attempts."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated the same unsuccessful search and was not the result ultimately used."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated the same unsuccessful search and was not the result ultimately used."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated the same unsuccessful search and was not the result ultimately used."
+    },
+    "expert_ci1_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated the same unsuccessful search and was not the result ultimately used."
+    },
+    "expert_ci1_cycle5": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated the same unsuccessful search and was not the result ultimately used."
+    },
+    "expert_ci1_cycle6": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated the same unsuccessful search and was not the result ultimately used."
+    },
+    "expert_ci1_cycle7": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated the same unsuccessful search and was not the result ultimately used."
+    },
+    "expert_ci1_cycle8": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The final attempt inferred the Greek Orthodox Church without evidence and propagated the incorrect custodianship framing."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "It combined unsupported denomination claims while continuing to confuse management with the act of opening the church."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "It propagated the earlier misframing and named Christian custodians instead of the Nusaybah Muslim family."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 1135,
+    "totalTokens": 10758,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 9621
+   },
+   "seconds": 12.69,
+   "expected": 18,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"It conflated physically opening the church with managing it, directing the run away from identifying the Nusaybah family.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search returned irrelevant documents and was abandoned in favor of later attempts.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search returned irrelevant documents and was abandoned in favor of later attempts.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated an earlier unsuccessful query and was not the result ultimately used.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated an earlier unsuccessful query and was not the result ultimately used.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The final search produced no supporting evidence yet concluded that the Franciscans open the church, propagating the coordinator's misframing.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"It continued the original conflation by asking about custodial arrangements rather than the Muslim family responsible for opening the doors.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search returned irrelevant documents and was abandoned in favor of later attempts.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated the same unsuccessful search and was not the result ultimately used.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated the same unsuccessful search and was not the result ultimately used.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated the same unsuccessful search and was not the result ultimately used.\"\n    },\n    \"expert_ci1_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated the same unsuccessful search and was not the result ultimately used.\"\n    },\n    \"expert_ci1_cycle5\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated the same unsuccessful search and was not the result ultimately used.\"\n    },\n    \"expert_ci1_cycle6\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated the same unsuccessful search and was not the result ultimately used.\"\n    },\n    \"expert_ci1_cycle7\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated the same unsuccessful search and was not the result ultimately used.\"\n    },\n    \"expert_ci1_cycle8\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The final attempt inferred the Greek Orthodox Church without evidence and propagated the incorrect custodianship framing.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"It combined unsupported denomination claims while continuing to confuse management with the act of opening the church.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"It propagated the earlier misframing and named Christian custodians instead of the Nusaybah Muslim family.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "28": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly recognized the straightforward geographic fact and that no expert consultation was needed."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The answer exactly matches the expected capital of Louisiana."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 81,
+    "totalTokens": 3290,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 3207
+   },
+   "seconds": 2.01,
+   "expected": 2,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly recognized the straightforward geographic fact and that no expert consultation was needed.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The answer exactly matches the expected capital of Louisiana.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "29": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "The coordinator incorrectly claimed the office was created in 1801 and identified the wrong inaugural officeholder."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The final answer propagated the coordinator's incorrect date instead of November 6, 1905."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 159,
+    "totalTokens": 3450,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 3289
+   },
+   "seconds": 2.41,
+   "expected": 2,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"The coordinator incorrectly claimed the office was created in 1801 and identified the wrong inaugural officeholder.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The final answer propagated the coordinator's incorrect date instead of November 6, 1905.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "30": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "It misparsed the multi-hop question and asked who received an edict rather than identifying the city and who later moved its capital to Beijing."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This abandoned search returned irrelevant documents and did not provide evidence for an answer."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "It wastefully repeated the same unsuccessful search without changing strategy."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The final retry used irrelevant results to produce the unsupported answer 'the people of Beijing,' propagating the flawed task framing."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "It continued the initial misinterpretation and answered who moved the Ming capital instead of resolving the question's intended historical chain."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The answer incorrectly names the Yongle Emperor rather than Yuan Shikai."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 472,
+    "totalTokens": 5549,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 5075
+   },
+   "seconds": 6.27,
+   "expected": 6,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"It misparsed the multi-hop question and asked who received an edict rather than identifying the city and who later moved its capital to Beijing.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This abandoned search returned irrelevant documents and did not provide evidence for an answer.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"It wastefully repeated the same unsuccessful search without changing strategy.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The final retry used irrelevant results to produce the unsupported answer 'the people of Beijing,' propagating the flawed task framing.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"It continued the initial misinterpretation and answered who moved the Ming capital instead of resolving the question's intended historical chain.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The answer incorrectly names the Yongle Emperor rather than Yuan Shikai.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "31": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly decomposed the task into identifying the princess's mother and then her mother's father."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The irrelevant search result was abandoned during the unsuccessful first expert call."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This retry returned irrelevant evidence and was subsequently abandoned."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated search produced no useful genealogical evidence and was abandoned."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This redundant retry repeated the same ineffective query without changing strategy."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The final search in the failed first call produced no answer and only necessitated another expert round."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeating the same correctly framed subtask was necessary only because the first expert call timed out."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This irrelevant search result was abandoned in favor of later attempts."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This search returned only an incidental reference to Princess Irene and was abandoned."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "It used irrelevant evidence to misidentify Princess Irene as Christina's mother, creating the wrong lineage that caused the final failure."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "It propagated the incorrect mother identification by asking for Princess Irene's father."
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This noisy search result was abandoned while retrying the propagated wrong subtask."
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated search returned no evidence about Princess Irene's father and was abandoned."
+    },
+    "expert_ci2_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This redundant retry produced the same irrelevant documents and was not the result ultimately used."
+    },
+    "expert_ci2_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated ineffective search was abandoned before the final attempt."
+    },
+    "expert_ci2_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "It inferred Kaiser Wilhelm II from documents calling him Princess Irene's brother-in-law, compounding the already incorrect lineage."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the expert's incorrect lineage and returned Kaiser Wilhelm II instead of Prince Andrew of Greece and Denmark."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 1150,
+    "totalTokens": 10340,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 9188
+   },
+   "seconds": 14.36,
+   "expected": 17,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly decomposed the task into identifying the princess's mother and then her mother's father.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The irrelevant search result was abandoned during the unsuccessful first expert call.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This retry returned irrelevant evidence and was subsequently abandoned.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated search produced no useful genealogical evidence and was abandoned.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This redundant retry repeated the same ineffective query without changing strategy.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The final search in the failed first call produced no answer and only necessitated another expert round.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeating the same correctly framed subtask was necessary only because the first expert call timed out.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This irrelevant search result was abandoned in favor of later attempts.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This search returned only an incidental reference to Princess Irene and was abandoned.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"It used irrelevant evidence to misidentify Princess Irene as Christina's mother, creating the wrong lineage that caused the final failure.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"It propagated the incorrect mother identification by asking for Princess Irene's father.\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This noisy search result was abandoned while retrying the propagated wrong subtask.\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated search returned no evidence about Princess Irene's father and was abandoned.\"\n    },\n    \"expert_ci2_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This redundant retry produced the same irrelevant documents and was not the result ultimately used.\"\n    },\n    \"expert_ci2_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated ineffective search was abandoned before the final attempt.\"\n    },\n    \"expert_ci2_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"It inferred Kaiser Wilhelm II from documents calling him Princess Irene's brother-in-law, compounding the already incorrect lineage.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the expert's incorrect lineage and returned Kaiser Wilhelm II instead of Prince Andrew of Greece and Denmark.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "32": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly identified the domain and delegated the question to an appropriate expert."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search was abandoned when the expert retried the same query."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated unsuccessful search was abandoned in favor of another retry."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated unsuccessful search was abandoned before the final attempt."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "The final search returned irrelevant evidence, yet the expert used it to provide the unsupported and incorrect answer Mark Levin."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the expert's incorrect answer without introducing an independent error."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 344,
+    "totalTokens": 5038,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 4692
+   },
+   "seconds": 4.48,
+   "expected": 6,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly identified the domain and delegated the question to an appropriate expert.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search was abandoned when the expert retried the same query.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated unsuccessful search was abandoned in favor of another retry.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated unsuccessful search was abandoned before the final attempt.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"The final search returned irrelevant evidence, yet the expert used it to provide the unsupported and incorrect answer Mark Levin.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the expert's incorrect answer without introducing an independent error.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "33": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly decomposed the question into identifying Otto's father and then his father's father."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The search returned irrelevant documents and was abandoned without influencing the final answer."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This reformulated search remained ineffective and its results were not used in the final answer."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The expert repeated an unsuccessful query whose results were subsequently discarded."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This was another redundant search that returned no relevant genealogical evidence."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The expert gave an unsupported answer, but the coordinator recognized and rejected it."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The coordinator correctly challenged the unsupported result, but this extra corrective round was overhead caused by the prior expert failure."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The expert retrieved a relevant source clearly identifying Otto's father as Henry II and Otto the Child as his maternal grandfather."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "The expert misread Otto the Child as the paternal grandfather despite the source calling him the maternal grandfather, then pursued an unnecessary additional generation."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The expert propagated the false maternal-line premise by identifying Henry the Lion from Otto the Child's ancestry."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the second expert's incorrect answer instead of giving Henry I, Count of Anhalt."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 1290,
+    "totalTokens": 8542,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 7250
+   },
+   "seconds": 16.95,
+   "expected": 11,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly decomposed the question into identifying Otto's father and then his father's father.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The search returned irrelevant documents and was abandoned without influencing the final answer.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This reformulated search remained ineffective and its results were not used in the final answer.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The expert repeated an unsuccessful query whose results were subsequently discarded.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This was another redundant search that returned no relevant genealogical evidence.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The expert gave an unsupported answer, but the coordinator recognized and rejected it.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The coordinator correctly challenged the unsupported result, but this extra corrective round was overhead caused by the prior expert failure.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The expert retrieved a relevant source clearly identifying Otto's father as Henry II and Otto the Child as his maternal grandfather.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"The expert misread Otto the Child as the paternal grandfather despite the source calling him the maternal grandfather, then pursued an unnecessary additional generation.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The expert propagated the false maternal-line premise by identifying Henry the Lion from Otto the Child's ancestry.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the second expert's incorrect answer instead of giving Henry I, Count of Anhalt.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "34": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly identified the historical fact being requested and introduced no false premise."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "The response incorrectly added a leading 1 instead of giving the established emergency number 911."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 191,
+    "totalTokens": 3458,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 3265
+   },
+   "seconds": 2.92,
+   "expected": 2,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly identified the historical fact being requested and introduced no false premise.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"The response incorrectly added a leading 1 instead of giving the established emergency number 911.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "35": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly recognized the ambiguity and sought additional context."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The broad search surfaced an irrelevant asteroid interpretation that was later rejected."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The vague follow-up search did not resolve the intended identity of Tina."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated the same ineffective query and returned no useful new evidence."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly rejected the asteroid interpretation as incompatible with the country question."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The broad search returned irrelevant acronym and software results."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The character search produced irrelevant results and did not establish that Tina was a person."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The repeated search remained irrelevant, and its conclusion that Tina was a person lacked evidence."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The coordinator unsupportedly assumed Tina meant Tina Turner, although this happened to yield the expected country."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The answer exactly matches an accepted expected answer."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 622,
+    "totalTokens": 6548,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 5924
+   },
+   "seconds": 8.13,
+   "expected": 10,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly recognized the ambiguity and sought additional context.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The broad search surfaced an irrelevant asteroid interpretation that was later rejected.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The vague follow-up search did not resolve the intended identity of Tina.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated the same ineffective query and returned no useful new evidence.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly rejected the asteroid interpretation as incompatible with the country question.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The broad search returned irrelevant acronym and software results.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The character search produced irrelevant results and did not establish that Tina was a person.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The repeated search remained irrelevant, and its conclusion that Tina was a person lacked evidence.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The coordinator unsupportedly assumed Tina meant Tina Turner, although this happened to yield the expected country.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The answer exactly matches an accepted expected answer.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "36": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly decomposed the comparison by first identifying the director of Marriage in Name Only."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful search was abandoned before the expert formed its answer."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated unsuccessful search was abandoned and added no useful evidence."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated search was abandoned before the final unsupported result."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "The expert used irrelevant retrieval results to falsely identify Frank Pierson as the film's director."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the false director identification by requesting Frank Pierson's death date."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful death-date search was abandoned."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This retry was abandoned after again retrieving irrelevant documents."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated search was abandoned and did not supply the final date."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The expert supplied an unsupported and incorrect death date while continuing the prior false director framing."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Although the next subtask was appropriate, the reasoning carried forward the false Frank Pierson identification and death date."
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This broad unsuccessful search was abandoned."
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This search produced no evidence connecting Dziga Vertov to the film and was abandoned."
+    },
+    "expert_ci2_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated unsupported search was abandoned."
+    },
+    "expert_ci2_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This redundant retry was abandoned before the final answer."
+    },
+    "expert_ci2_cycle4": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "The expert inferred Dziga Vertov as director from irrelevant retrieval results with no supporting film connection."
+    },
+    "coord_r4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the false Dziga Vertov identification into the death-date subtask."
+    },
+    "expert_ci3_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful death-date search was abandoned."
+    },
+    "expert_ci3_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated search was abandoned without yielding the requested date."
+    },
+    "expert_ci3_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This retry was abandoned after retrieving no explicit death date."
+    },
+    "expert_ci3_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This redundant search was abandoned before the final attempt."
+    },
+    "expert_ci3_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Although 1954 is Dziga Vertov's death year, the step pursued the wrong director and propagated the earlier failure."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "The coordinator answered with a person's name rather than the requested film title, despite its own comparison implying Marriage in Name Only."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 2038,
+    "totalTokens": 13207,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 11167
+   },
+   "seconds": 24.87,
+   "expected": 23,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly decomposed the comparison by first identifying the director of Marriage in Name Only.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful search was abandoned before the expert formed its answer.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated unsuccessful search was abandoned and added no useful evidence.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated search was abandoned before the final unsupported result.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"The expert used irrelevant retrieval results to falsely identify Frank Pierson as the film's director.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the false director identification by requesting Frank Pierson's death date.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful death-date search was abandoned.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This retry was abandoned after again retrieving irrelevant documents.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated search was abandoned and did not supply the final date.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The expert supplied an unsupported and incorrect death date while continuing the prior false director framing.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Although the next subtask was appropriate, the reasoning carried forward the false Frank Pierson identification and death date.\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This broad unsuccessful search was abandoned.\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This search produced no evidence connecting Dziga Vertov to the film and was abandoned.\"\n    },\n    \"expert_ci2_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated unsupported search was abandoned.\"\n    },\n    \"expert_ci2_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This redundant retry was abandoned before the final answer.\"\n    },\n    \"expert_ci2_cycle4\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"The expert inferred Dziga Vertov as director from irrelevant retrieval results with no supporting film connection.\"\n    },\n    \"coord_r4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the false Dziga Vertov identification into the death-date subtask.\"\n    },\n    \"expert_ci3_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful death-date search was abandoned.\"\n    },\n    \"expert_ci3_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated search was abandoned without yielding the requested date.\"\n    },\n    \"expert_ci3_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This retry was abandoned after retrieving no explicit death date.\"\n    },\n    \"expert_ci3_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This redundant search was abandoned before the final attempt.\"\n    },\n    \"expert_ci3_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Although 1954 is Dziga Vertov's death year, the step pursued the wrong director and propagated the earlier failure.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"The coordinator answered with a person's name rather than the requested film title, despite its own comparison implying Marriage in Name Only.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "37": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "The coordinator failed to decompose the question into finding Marzuki Alie's birthplace and then identifying the battle there."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The final answer propagated the coordinator's mistaken conclusion that no such battle existed."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 183,
+    "totalTokens": 3565,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 3380
+   },
+   "seconds": 2.54,
+   "expected": 2,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"The coordinator failed to decompose the question into finding Marzuki Alie's birthplace and then identifying the battle there.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The final answer propagated the coordinator's mistaken conclusion that no such battle existed.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "38": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The task was framed appropriately, but the unsupported vulture-or-crow speculation introduced minor risk without affecting the successful result."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The relevant query returned inconclusive material that did not establish the expert's answer."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The reformulated search remained inconclusive and did not support a reliable answer."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated an earlier query and added no useful evidence."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This redundant repeat still failed to support the incorrect dog answer, which the coordinator later rejected."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The coordinator correctly questioned the unsupported dog answer and requested verification."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The search was relevant but retrieved no evidence identifying the animal."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The reformulated query remained inconclusive despite eventually leading to the correct expert answer."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This identical repeat added no new evidence."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This further identical search was redundant and produced no supporting evidence."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The coordinator unnecessarily doubted the correct synonym serpent and initiated an extra verification round."
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The search returned wholly irrelevant documents and provided no support for the answer."
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "The revised query also returned irrelevant documents and did not advance verification."
+    },
+    "expert_ci2_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Another reformulation produced irrelevant results and no evidentiary support."
+    },
+    "expert_ci2_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This repeated the preceding ineffective query and added no useful information."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The concise answer snake matches the expected answer."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 1113,
+    "totalTokens": 9677,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 8562
+   },
+   "seconds": 14.03,
+   "expected": 16,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The task was framed appropriately, but the unsupported vulture-or-crow speculation introduced minor risk without affecting the successful result.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The relevant query returned inconclusive material that did not establish the expert's answer.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The reformulated search remained inconclusive and did not support a reliable answer.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated an earlier query and added no useful evidence.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This redundant repeat still failed to support the incorrect dog answer, which the coordinator later rejected.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The coordinator correctly questioned the unsupported dog answer and requested verification.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The search was relevant but retrieved no evidence identifying the animal.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The reformulated query remained inconclusive despite eventually leading to the correct expert answer.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This identical repeat added no new evidence.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This further identical search was redundant and produced no supporting evidence.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The coordinator unnecessarily doubted the correct synonym serpent and initiated an extra verification round.\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The search returned wholly irrelevant documents and provided no support for the answer.\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"The revised query also returned irrelevant documents and did not advance verification.\"\n    },\n    \"expert_ci2_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Another reformulation produced irrelevant results and no evidentiary support.\"\n    },\n    \"expert_ci2_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This repeated the preceding ineffective query and added no useful information.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"The concise answer snake matches the expected answer.\"\n    }\n  }\n}",
+   "temperature": null
+  },
+  "39": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "The coordinator incorrectly assumed the title referred to the Star Wars film and created the wrong subtask instead of identifying Robert C. Mason's book."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This initial unhelpful search was abandoned in favor of later attempts."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unsuccessful revised search was abandoned and did not directly determine the final response."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "This unhelpful search attempt was superseded by the final repeated attempt."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The expert propagated the coordinator's mistaken film framing and answered Lawrence Kasdan despite retrieving no supporting evidence."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The coordinator propagated the earlier mistaken identification and returned Lawrence Kasdan instead of Robert C. Mason."
+    }
+   },
+   "usage": {
+    "inputTokens": 2,
+    "outputTokens": 509,
+    "totalTokens": 5728,
+    "cacheReadInputTokens": 0,
+    "cacheWriteInputTokens": 5217
+   },
+   "seconds": 6.49,
+   "expected": 6,
+   "raw": "{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"The coordinator incorrectly assumed the title referred to the Star Wars film and created the wrong subtask instead of identifying Robert C. Mason's book.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This initial unhelpful search was abandoned in favor of later attempts.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unsuccessful revised search was abandoned and did not directly determine the final response.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"This unhelpful search attempt was superseded by the final repeated attempt.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The expert propagated the coordinator's mistaken film framing and answered Lawrence Kasdan despite retrieving no supporting evidence.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"The coordinator propagated the earlier mistaken identification and returned Lawrence Kasdan instead of Robert C. Mason.\"\n    }\n  }\n}",
+   "temperature": null
+  }
+ }
+}

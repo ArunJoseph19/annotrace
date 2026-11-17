@@ -1,0 +1,16 @@
+{
+  "question": "Which university did the author of Dune attend?",
+  "ground_truth": "University of Washington",
+  "question_ID": "hand-crafted-014",
+  "mistake_agent": "WebSurfer",
+  "mistake_step": 3,
+  "mistake_reason": "WebSurfer returned a result about a different Frank Herbert and did not check the disambiguation page.",
+  "history": [
+    {"agent": "Orchestrator", "content": "We need the author of Dune, then their university. Assigning to WebSurfer."},
+    {"agent": "WebSurfer", "content": "Searching for 'author of Dune'. Result: Frank Herbert."},
+    {"agent": "Orchestrator", "content": "Now find where Frank Herbert studied."},
+    {"agent": "WebSurfer", "content": "Result: Frank Herbert, the musician, studied at Juilliard."},
+    {"agent": "Assistant", "content": "Based on the above, the answer is Juilliard."},
+    {"agent": "Orchestrator", "content": "Final answer: Juilliard."}
+  ]
+}

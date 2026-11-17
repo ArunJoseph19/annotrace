@@ -1,0 +1,3209 @@
+{
+  "source_file": "subset_40_stratified.jsonl",
+  "trajectories": [
+    {
+      "traj_idx": 2,
+      "question": "Mick Carter is the landlord of a public house located at what address?",
+      "data_source": "hotpotqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "related retival  indicate the expert might be correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "same and no better strategy",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "redundant",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "redundant",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle4",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "redundant",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle5",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "redundant",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle6",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "redundant",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle7",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "redundant",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle8",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "redundant",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle9",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "redundant",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "Mick Carter is a fictional character from the British soap opera EastEnders.",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Error",
+          "reason": "Mick Carter is a fictional character from the British soap opera EastEnders.",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 3,
+      "question": "Where did Tem\u00fcge's father die?",
+      "data_source": "2wikimultihopqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "the expert retrival related document, but not hit the accurate document",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "another try and indicate new document 3",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "expert make up the result without proof",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "Tem\u00fcge\u2019s father was Yes\u00fcgei (also spelled Yes\u00fckhei) Baghatur, not Genghis Khan. it might influence the result",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        }
+      ]
+    },
+    {
+      "traj_idx": 6,
+      "question": "Who was the director of Arthur?",
+      "data_source": "popqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct research",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "expert try to retrival the docs in a different strategy, but only change the order",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Critical",
+          "reason": "redundant and get the wrong conclusion",
+          "note": "",
+          "source": "human",
+          "critical_type": "Expert Agent \u2014 reasoning"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "the coordinator contains wrong information leads to a wrong qeurry, but the expert choice is correct, finally it givesa hallucation",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 7,
+      "question": "Which film has the director born earlier, Sabar Upare Maa or Badhti Ka Naam Dadhi?",
+      "data_source": "2wikimultihopqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice, it checks totally unrelated content",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice, it checks totally unrelated content",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice, it checks totally unrelated content",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice, it checks totally unrelated content",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "assign to a wrong expert",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice, it checks totally unrelated content and reduces to failure",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice, it checks totally unrelated content and reduces to failure",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice, it checks totally unrelated content and reduces to failure",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice, it checks totally unrelated content and reduces to failure, the answer is hallucation",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "assign the task to a wrong agent",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "expert_ci2_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "Inherited the previous error message",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "Inherited the previous error message",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "Inherited the previous error message",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "Inherited the previous error message",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r3",
+          "kind": "coordinator_thinking",
+          "label": "Error",
+          "reason": "this step check one person's name who actually is not the director, so expert selection is wrong",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci3_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "same expert choice and docs with round 1, the coordinator did not learn form experience",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci3_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert try to find an answer out of its scope",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci3_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert try to find an answer out of its scope",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci3_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert try to find an answer out of its scope",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r4",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "actually the coordinator have the chance to select a correct expert that might leads to success, but it failed to do so. and the document seems not related to the question,so the expert choice might be wrong",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "coord_r5",
+          "kind": "coordinator_thinking",
+          "label": "Error",
+          "reason": "The previous error message was relayed.",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "The previous error message was relayed.",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 9,
+      "question": "Who was the composer of Five Years?",
+      "data_source": "popqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "expert trys to fined infomation about five years",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "useful update",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "same as former tar",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Critical",
+          "reason": "The answer might be a hallucation",
+          "note": "",
+          "source": "human",
+          "critical_type": "Expert Agent \u2014 reasoning"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "Coordinator chooses a insufficient stragety leading to a misunderstanding of \"five year\", which potentially causes failure",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "show the related ducument, but due to input information is wrong, the is no way to find answer from self-contradictory",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "repeatedly show the same related ducument, but due to input information is wrong, the is no way to find answer from self-contradictory",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "repeatedly show the same related ducument, but due to input information is wrong, the is no way to find answer from self-contradictory",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "repeatedly show the same related ducument, but due to input information is wrong, the is no way to find answer from self-contradictory",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Error",
+          "reason": "relay the error from former step,anf might be hallucation",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 10,
+      "question": "Ikarus was the codename for the proposed German invasion of which country?",
+      "data_source": "triviaqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "reasonable choice and search for some related documents",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "reasonable update",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "repeated, same as first one",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "it's haluucation, from differnt backgroung",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "If the task descrition was more accurate or choice the better expert, it might success",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 11,
+      "question": "\"The Simpson's\" episode featuring the  \"Itchy & Scratchy & Poochie\" show satirized the world of television production ju",
+      "data_source": "hotpotqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unraleted retrival, the  subquestion is  biased and unclear",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "update the content",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "redundant content",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Critical",
+          "reason": "slightly update the documents, but still not find the document directly related to the final answer",
+          "note": "",
+          "source": "human",
+          "critical_type": "Expert Agent \u2014 reasoning"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "the coordinator choice the related document, so the expert choice might be accurate, but the thinking and retrival stragety are not sharp enough",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 12,
+      "question": "If you were performing an orison what would you be doing?",
+      "data_source": "triviaqa",
+      "is_correct": false,
+      "score": 0.1538461538,
+      "steps": [
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "miss the question",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "uncorrect thinking leads to a wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 13,
+      "question": "Which film came out first, Ayat-Ayat Cinta 2 or Lost Kisses?",
+      "data_source": "2wikimultihopqa",
+      "is_correct": false,
+      "score": 0.5714285714,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice which can be tolden from the unrelated document",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice which can be tolden from the unrelated document",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice which can be tolden from the unrelated document",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "wrong expert assignment",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice, the coordinator prefer a misleading key word",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice, the coordinator prefer a misleading key word",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice, the coordinator prefer a misleading key word",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice, the coordinator prefer a misleading key word",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "the coordinator prefer a misleading key word leads to a wrong expert choice",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "herigate lots of incorrect infomation",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 14,
+      "question": "Who was the composer of The Fly?",
+      "data_source": "popqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert due to unrelated document retrival ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert due to unrelated document retrival ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert due to unrelated document retrival ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert due to unrelated document retrival ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle4",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert due to unrelated document retrival ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle5",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert due to unrelated document retrival and the name is hallucation",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "wrong expert choice ",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 15,
+      "question": "Who was born later, Mickey Hart or Tony Owen?",
+      "data_source": "2wikimultihopqa",
+      "is_correct": false,
+      "score": 0.4,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Critical",
+          "reason": "finally fail to find the correct guy, and the date seems to be a hallucation",
+          "note": "",
+          "source": "human",
+          "critical_type": "Expert Agent \u2014 reasoning"
+        },
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "reasonable search",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "reasonable update",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct search",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "reasonable research update",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle2",
+          "kind": "expert_cycle",
+          "label": "Warning",
+          "reason": "redundant",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "redundant, and the date is  from another guy, it's a wrong conclusion",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "the expert might be wrong, and even the document dataset seems related, it finally fail to find the correct answer",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "inheritate wrong info and conduct wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 16,
+      "question": "What is Adil Shamoo's occupation?",
+      "data_source": "popqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong agent leads to a wrong search, the name is not matched",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "the expert trys several times but still fails to find the correct or related document, and the name shown in retrival is mismatched, so probably the expertis wrong ",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Critical",
+          "reason": "wrong agent leads to a wrong search, the name is not matched",
+          "note": "",
+          "source": "human",
+          "critical_type": "Expert Agent \u2014 reasoning"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong agent leads to a wrong search, the name is not matched",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong agent leads to a wrong search, the name is not matched",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "same wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "same wrong expert, and naval officer is hallucation.",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "it's good for having the intension of self-correction, but still fail to find the correct expert and end with hallucation",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "coord_r3",
+          "kind": "coordinator_thinking",
+          "label": "Error",
+          "reason": "the verified knowledge is wrong ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "heritate wrong infomation",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 17,
+      "question": "Who was the producer of Trauma?",
+      "data_source": "popqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong understanding of Trauma leads to unrelated search stragety",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong understanding of Trauma leads to unrelated search stragety",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong understanding of Trauma leads to unrelated search stragety",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Critical",
+          "reason": "wrong understanding of Trauma leads to unrelated search stragety, and the name might be hallucation",
+          "note": "",
+          "source": "human",
+          "critical_type": "Expert Agent \u2014 reasoning"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "aimed at incompleted key word reducing to a wrong agent choice or search strategy",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 20,
+      "question": "Who is the paternal grandfather of Charles Andrew Bruce?",
+      "data_source": "2wikimultihopqa",
+      "is_correct": false,
+      "score": 0.2,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "Correct context identification",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Informational",
+          "reason": "Correct identification",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Critical",
+          "reason": "the agent get confused about the relationship-in-law, Major Ewen Cameron Bruce is Charles Andrew Bruce's great grandfather",
+          "note": "",
+          "source": "human",
+          "critical_type": "Expert Agent \u2014 reasoning"
+        }
+      ]
+    },
+    {
+      "traj_idx": 21,
+      "question": "Franz Liszt ended up the father-in-law to which other very famous composer?",
+      "data_source": "triviaqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "the agent get confused of the relationship-in-law, Hans von B\u00fclow is Franz Liszt's father-in-law",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Response Process"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 0,
+      "question": "The owner of radio station KWPW has the same name as an American character actor. What is it?",
+      "data_source": "hotpotqa",
+      "is_correct": true,
+      "score": 1.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert response is not related to the question",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "the expert response is weird, not about culture or art but about policy",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert response is not related to the question",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert response is not related to the question, and the answer is a hallucation",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Error",
+          "reason": "the task decomposation is weird, sub question is not accurate and have logistic misorder,so the coordinator is responsible to the failure",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert response is not related to the question",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert response is not related to the question",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert response is not related to the question",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert response is not related to the question",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Error",
+          "reason": "the task decomposation is weird, sub question is not accurate and have logistic misorder,so the coordinator is responsed to the failure",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle0",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle1",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r3",
+          "kind": "coordinator_thinking",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci3_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "the expert answer is not related to the question and potentially cause failure",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci3_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "the expert answer is not related to the question and potentially cause failure",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci3_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "the Reasoning  actually is not related to the topic, but accidently hit the goal",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r4",
+          "kind": "coordinator_thinking",
+          "label": "Error",
+          "reason": "the expert attribution is weird, even it accidently come accross the same name Bill, but is not truely connect to the topic",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 1,
+      "question": "Maria Curcio taught a classical pianist who is of what South American lineage?",
+      "data_source": "hotpotqa",
+      "is_correct": true,
+      "score": 1.0,
+      "steps": [
+        {
+          "step_key": "expert_ci1_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unrelated expert response",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unrelated expert response",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "input infomation is wrong results to an unrelated expert response",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "input infomation is wrong results to an unrelated expert response",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Error",
+          "reason": "input infomation is wrong results to an unrelated expert response, the expert choice or subquestion construction is potentially wrong leading  to a unrelated expert response, the answer accidently hit the correction",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Informational",
+          "reason": "very damatically whole wrong and unreasonable precoss hit a correct answer",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "Maria Curcio taught Martha Argerich, the coordinatior analysis is correct, but possibly chose a wrong expert? or the expert performed terrible on that question",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unrelated response",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unrelated response",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unrelated response, and actuallt hallucation, Maria Curcio taught Martha Argerich",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unrelated response",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 4,
+      "question": "What city has a neighborhood called Little Havana?",
+      "data_source": "triviaqa",
+      "is_correct": true,
+      "score": 1.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "repeat",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "repeat",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "repeat",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle4",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "repeat",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle5",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "repeat",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle6",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "repeat",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "the  coordinator already provide correct infomation Miami, which guarantee the final victory. but the expert choice or subquestion  might has risk because the retrival not related to the question",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        }
+      ]
+    },
+    {
+      "traj_idx": 5,
+      "question": "Which battle occurred first, the Battle of Manila or the Battle of Guam?",
+      "data_source": "hotpotqa",
+      "is_correct": true,
+      "score": 1.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unrelated document ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unrelated document ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unrelated document ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unrelated document ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle4",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unrelated document ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle5",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "hallucation",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "the answer might be a hallucation even it same with the  correct answer, the  expert performence is bad",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle4",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "hallucation, Battle of Guam: July 21 \u2013 August 10, 1944",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "the answer is hallucation and ",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "coord_r3",
+          "kind": "coordinator_thinking",
+          "label": "Error",
+          "reason": "hertigate hallucation",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 8,
+      "question": "What is the religion of Mahmoud Taleghani?",
+      "data_source": "popqa",
+      "is_correct": true,
+      "score": 1.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "related document",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "related document",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "related document",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Critical",
+          "reason": "hallucation, but the  ducument content is related to the question, but the output is hallucation,even same with the crooect answer",
+          "note": "",
+          "source": "human",
+          "critical_type": "Expert Agent \u2014 reasoning"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 18,
+      "question": "Dmitri, Ivan and Alexei are the eponymous central characters of which 1880 novel by Fyodor Dostoyevsky?",
+      "data_source": "triviaqa",
+      "is_correct": true,
+      "score": 1.0,
+      "steps": [
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 19,
+      "question": "Derived from the use of naval artillery what is the nautical term for the top edge of the side of a boat?",
+      "data_source": "triviaqa",
+      "is_correct": true,
+      "score": 1.0,
+      "steps": [
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 22,
+      "question": "Which Scottish league team play their home game at Victoria Park and have the nickname The Staggies'?",
+      "data_source": "triviaqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle4",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "not fully prove the answer is true",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "decopsation is wierd, and the expert choice is potentially wrong ",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer, prosponse the  expert false",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r3",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "actually the coordinator should double the expert response and search again",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle4",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle3",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle2",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 23,
+      "question": "Where was the director of film Torchy Blane In Panama born?",
+      "data_source": "2wikimultihopqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert leads to unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert leads to unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert leads to unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert leads to unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle4",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert leads to unrelated doc and hallucation",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "wrong expert choice",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert leads to unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert leads to unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert leads to unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert leads to unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle4",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert leads to unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "wrong expert choice",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "expert_ci2_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong info generagte by coor",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong info generagte by coor",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong info generagte by coor",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r3",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "the director name is wrong, prosgate the mistake to expert,and end with a hallucation. dicector: Frank McDonald \u2014 directed the first films, including Smart Blonde. William Clemens William Beaudine Ray McCarey Noel M. Smith",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Response Process"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "prosgate the wrong info",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 24,
+      "question": "where does the pulmonary trunk receive blood from?",
+      "data_source": "nq",
+      "is_correct": false,
+      "score": 0.3636363636,
+      "steps": [
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 25,
+      "question": "What is the name of the hotel on the Upper West Side of New York City that housed a gay bathhouse?",
+      "data_source": "hotpotqa",
+      "is_correct": true,
+      "score": 1.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct, but it tries too many times",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 26,
+      "question": "who wrote lord have mercy on the working man?",
+      "data_source": "nq",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice leads to an unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice leads to an unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice leads to an unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice leads to an unrelated doc",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "the expert choice is wrong ",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 27,
+      "question": "who opens the church of the holy sepulchre?",
+      "data_source": "nq",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert leads to unrelated docus",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert leads to unrelated docus",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert leads to unrelated docus",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert leads to unrelated docus",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle4",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "hallucation answer",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "expert is wrong ",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert wrong ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert wrong ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert wrong ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert wrong ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle4",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert wrong ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle5",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert wrong ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle6",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert wrong ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle7",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert wrong ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle8",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert wrong and hallucation",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "calling wrong export",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "coord_r3",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "it should keep going and correct the answer",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 28,
+      "question": "What is the capital of Louisiana?",
+      "data_source": "popqa",
+      "is_correct": true,
+      "score": 1.0,
+      "steps": [
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 29,
+      "question": "When did the first prime minister of the Russian Empire come into office?",
+      "data_source": "bamboogle",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "wrong analysis and might be bias",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Response Process"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 30,
+      "question": "Who moved the capitol from the city where the Yongle emperor greeted the person to whom the edict was addressed to Beiji",
+      "data_source": "musique",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert produce unrelated document",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert produce unrelated document",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert produce unrelated document, and the answer is no way be possible",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "expert choice is wrong ",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Informational",
+          "reason": "the knowledge basement is correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 31,
+      "question": "Who is the maternal grandfather of Princess Christina Margarethe Of Hesse?",
+      "data_source": "2wikimultihopqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "error expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle4",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "it should choice a correct expert and correct the answer",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "wrong expert choice",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "expert_ci2_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle4",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "the agent is confused by the relationship",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r3",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "the mother is Princess Sophie of Greece and Denmark. the coor should correct it.",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Task decomposition"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong anser",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 32,
+      "question": "Who was the director of The Distance?",
+      "data_source": "popqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert choice, ended with hallucation",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "wrong expert assignment",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 33,
+      "question": "Who is Otto I, Prince Of Anhalt-Aschersleben's paternal grandfather?",
+      "data_source": "2wikimultihopqa",
+      "is_correct": false,
+      "score": 0.2857142857,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert error",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert error",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert error",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert error",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle4",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "the answer is hallucation and the expert choice is wrong ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "wrong expert assignment",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle2",
+          "kind": "expert_cycle",
+          "label": "Critical",
+          "reason": "related document but fail to find the final answer",
+          "note": "",
+          "source": "human",
+          "critical_type": "Expert Agent \u2014 reasoning"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "Henry the Lion refers to a different person: Henry III, Duke of Saxony and Henry XII, Duke of Bavaria, from the House of Welf.",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 34,
+      "question": "In 1968, what telephone number was established as the national emergency number for the United States?",
+      "data_source": "triviaqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 35,
+      "question": "In what country is Tina?",
+      "data_source": "popqa",
+      "is_correct": true,
+      "score": 1.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "terrible subtask",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Subtask Generation"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "hallucation",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "terrible sub task",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Subtask Generation"
+        },
+        {
+          "step_key": "coord_r3",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "hallucation",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Response Process"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Informational",
+          "reason": "accidently",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 36,
+      "question": "Which film has the director died later, Marriage In Name Only or Mille Chilometri Al Minuto!?",
+      "data_source": "2wikimultihopqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert wrong",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert wrong",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "expert wrong",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "hallucation",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "hallucation",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "wrong expert choice",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "expert_ci2_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle4",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r3",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "it not figure out the first answer is wrong ,and prosgate it to the next step. the expert choice is wrong",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "expert_ci3_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci3_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci3_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci3_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci3_cycle4",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "hallucation",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r4",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "wrong exoert",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Expert Assignment"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 37,
+      "question": "On what date did Battle of the birth place of Marzuki Alie end?",
+      "data_source": "musique",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "too confident to the knowledge base, which lead to failure",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Response Process"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong ",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 38,
+      "question": "Which animal represents the deadly sin of envy?",
+      "data_source": "triviaqa",
+      "is_correct": true,
+      "score": 1.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Critical",
+          "reason": "hallucation ,misunderstand the  question",
+          "note": "",
+          "source": "human",
+          "critical_type": "Expert Agent \u2014 reasoning"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "irrelated document and query",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle1",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct ",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle2",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci1_cycle3",
+          "kind": "expert_cycle",
+          "label": "Critical",
+          "reason": "not valid reasoning",
+          "note": "",
+          "source": "human",
+          "critical_type": "Expert Agent \u2014 reasoning"
+        },
+        {
+          "step_key": "coord_r2",
+          "kind": "coordinator_thinking",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "irrelated document",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "irrelated document",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci2_cycle3",
+          "kind": "expert_cycle",
+          "label": "Critical",
+          "reason": "its hallucation",
+          "note": "",
+          "source": "human",
+          "critical_type": "Expert Agent \u2014 reasoning"
+        },
+        {
+          "step_key": "coord_r3",
+          "kind": "coordinator_thinking",
+          "label": "Warning",
+          "reason": "correct context, but not solve the problem and end with hallucation",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Informational",
+          "reason": "correct",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    },
+    {
+      "traj_idx": 39,
+      "question": "Who is the author of Solo?",
+      "data_source": "popqa",
+      "is_correct": false,
+      "score": 0.0,
+      "steps": [
+        {
+          "step_key": "expert_ci0_cycle0",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle1",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle2",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "expert_ci0_cycle3",
+          "kind": "expert_cycle",
+          "label": "Error",
+          "reason": "wrong expert, end with hallucation",
+          "note": "",
+          "source": "human"
+        },
+        {
+          "step_key": "coord_r1",
+          "kind": "coordinator_thinking",
+          "label": "Critical",
+          "reason": "it assumes wrong infomation at beginning, and assign it to a wrong expert",
+          "note": "",
+          "source": "human",
+          "critical_type": "Centralized Agent \u2014 Response Process"
+        },
+        {
+          "step_key": "final_answer",
+          "kind": "final_answer",
+          "label": "Error",
+          "reason": "wrong answer",
+          "note": "",
+          "source": "human"
+        }
+      ]
+    }
+  ],
+  "exported_at": "20260605_192603"
+}

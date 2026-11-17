@@ -1,0 +1,23 @@
+[
+  {
+    "id": "run-8841", "model": "gpt-4o",
+    "messages": [
+      {"role": "system", "content": "You are a research assistant with web search."},
+      {"role": "user", "content": "Which university did the author of Dune attend?"},
+      {"role": "assistant", "content": "I need to find the author first.",
+       "tool_calls": [{"function": {"name": "web_search", "arguments": "{\"q\":\"author of Dune\"}"}}]},
+      {"role": "tool", "content": "Dune was written by Frank Herbert."},
+      {"role": "assistant", "content": null,
+       "tool_calls": [{"function": {"name": "web_search", "arguments": "{\"q\":\"Frank Herbert university\"}"}}]},
+      {"role": "tool", "content": "Frank Herbert attended the University of Washington."},
+      {"role": "assistant", "content": "Frank Herbert attended the University of Washington."}
+    ]
+  },
+  {
+    "id": "run-8842", "model": "gpt-4o",
+    "messages": [
+      {"role": "user", "content": "What is the capital of Anguilla?"},
+      {"role": "assistant", "content": "The capital of Anguilla is The Valley."}
+    ]
+  }
+]

@@ -1,0 +1,24 @@
+annotator A vs annotator B (overlap)                         n= 120  4-way raw=0.392 k=0.153   fault/ok raw=0.500 k=0.028
+annotator A vs final labels                                          n= 177  4-way raw=0.390 k=0.163   fault/ok raw=0.492 k=0.062
+annotator B vs final labels                                        n= 120  4-way raw=0.858 k=0.777   fault/ok raw=0.917 k=0.783
+global.amazon.nova-2-lite-v1_0 vs final                      n= 348  4-way raw=0.606 k=0.293   fault/ok raw=0.658 k=0.181
+global.anthropic.claude-haiku-4-5-20251001-v1_0 vs final     n= 348  4-way raw=0.466 k=0.240   fault/ok raw=0.583 k=0.167
+us.anthropic.claude-opus-5 vs final                          n= 348  4-way raw=0.287 k=0.120   fault/ok raw=0.457 k=0.112
+us.anthropic.claude-sonnet-5 vs final                        n= 308  4-way raw=0.318 k=0.149   fault/ok raw=0.494 k=0.152
+us.meta.llama3-3-70b-instruct-v1_0 vs final                  n= 348  4-way raw=0.460 k=0.221   fault/ok raw=0.566 k=0.142
+us.openai.gpt-5.6-sol vs final                               n= 348  4-way raw=0.256 k=0.092   fault/ok raw=0.431 k=0.077
+global.amazon.nova-2-lite-v1 vs global.anthropic.claude-haik n= 348  4-way raw=0.511 k=0.289   fault/ok raw=0.632 k=0.264
+global.amazon.nova-2-lite-v1 vs us.anthropic.claude-opus-5   n= 348  4-way raw=0.279 k=0.111   fault/ok raw=0.431 k=0.002
+global.amazon.nova-2-lite-v1 vs us.anthropic.claude-sonnet-5 n= 308  4-way raw=0.318 k=0.144   fault/ok raw=0.468 k=0.050
+global.amazon.nova-2-lite-v1 vs us.meta.llama3-3-70b-instruc n= 348  4-way raw=0.589 k=0.379   fault/ok raw=0.684 k=0.372
+global.amazon.nova-2-lite-v1 vs us.openai.gpt-5.6-sol        n= 348  4-way raw=0.256 k=0.101   fault/ok raw=0.417 k=-0.018
+global.anthropic.claude-haik vs us.anthropic.claude-opus-5   n= 348  4-way raw=0.589 k=0.425   fault/ok raw=0.667 k=0.333
+global.anthropic.claude-haik vs us.anthropic.claude-sonnet-5 n= 308  4-way raw=0.633 k=0.487   fault/ok raw=0.701 k=0.391
+global.anthropic.claude-haik vs us.meta.llama3-3-70b-instruc n= 348  4-way raw=0.514 k=0.323   fault/ok raw=0.655 k=0.310
+global.anthropic.claude-haik vs us.openai.gpt-5.6-sol        n= 348  4-way raw=0.572 k=0.399   fault/ok raw=0.652 k=0.305
+us.anthropic.claude-opus-5 vs us.anthropic.claude-sonnet-5   n= 308  4-way raw=0.877 k=0.810   fault/ok raw=0.935 k=0.839
+us.anthropic.claude-opus-5 vs us.meta.llama3-3-70b-instruc   n= 348  4-way raw=0.437 k=0.240   fault/ok raw=0.638 k=0.269
+us.anthropic.claude-opus-5 vs us.openai.gpt-5.6-sol          n= 348  4-way raw=0.874 k=0.795   fault/ok raw=0.940 k=0.849
+us.anthropic.claude-sonnet-5 vs us.meta.llama3-3-70b-instruc n= 308  4-way raw=0.464 k=0.282   fault/ok raw=0.666 k=0.331
+us.anthropic.claude-sonnet-5 vs us.openai.gpt-5.6-sol        n= 308  4-way raw=0.847 k=0.761   fault/ok raw=0.912 k=0.780
+us.meta.llama3-3-70b-instruc vs us.openai.gpt-5.6-sol        n= 348  4-way raw=0.451 k=0.263   fault/ok raw=0.629 k=0.251

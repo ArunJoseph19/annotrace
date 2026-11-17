@@ -1,0 +1,17 @@
+# The card and label styling is hand-written in light tones, so the app pins a
+# light theme. Without this, a viewer whose browser prefers dark gets
+# Streamlit's near-white headings on our near-white page background.
+[theme]
+base = "light"
+primaryColor = "#2a78d6"
+backgroundColor = "#fbfbfa"
+secondaryBackgroundColor = "#f1efe8"
+textColor = "#23221f"
+
+[server]
+headless = true
+
+[client]
+# hides Streamlit's own Deploy button and developer menu: this is a finished
+# app, and neither does anything for the person annotating
+toolbarMode = "minimal"

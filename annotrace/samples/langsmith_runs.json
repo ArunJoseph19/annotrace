@@ -1,0 +1,38 @@
+[
+  {"id": "aa000000-0000-0000-0000-000000000001", "name": "AgentExecutor",
+   "run_type": "chain", "parent_run_id": null,
+   "trace_id": "aa000000-0000-0000-0000-000000000001",
+   "dotted_order": "20260910T110402090000Zaa000000-0000-0000-0000-000000000001",
+   "start_time": "2026-09-10T11:04:02.090000", "end_time": "2026-09-10T11:04:08.500000",
+   "inputs": {"input": "Which university did the author of Dune attend?"},
+   "outputs": {"output": "The University of Washington."},
+   "error": null, "events": [], "extra": {"metadata": {"ls_provider": "openai"}}},
+
+  {"id": "aa000000-0000-0000-0000-000000000002", "name": "ChatOpenAI",
+   "run_type": "llm", "parent_run_id": "aa000000-0000-0000-0000-000000000001",
+   "trace_id": "aa000000-0000-0000-0000-000000000001",
+   "dotted_order": "20260910T110402090000Zaa000000-0000-0000-0000-000000000001.20260910T110402200000Zaa000000-0000-0000-0000-000000000002",
+   "start_time": "2026-09-10T11:04:02.200000", "end_time": "2026-09-10T11:04:03.900000",
+   "inputs": {"messages": [[{"role": "user", "content": "Which university did the author of Dune attend?"}]]},
+   "outputs": {"generations": [[{"text": "I should find the author of Dune first."}]]},
+   "error": null, "events": [],
+   "extra": {"invocation_params": {"model": "gpt-4o", "temperature": 0}}},
+
+  {"id": "aa000000-0000-0000-0000-000000000003", "name": "web_search",
+   "run_type": "tool", "parent_run_id": "aa000000-0000-0000-0000-000000000001",
+   "trace_id": "aa000000-0000-0000-0000-000000000001",
+   "dotted_order": "20260910T110402090000Zaa000000-0000-0000-0000-000000000001.20260910T110404050000Zaa000000-0000-0000-0000-000000000003",
+   "start_time": "2026-09-10T11:04:04.050000", "end_time": "2026-09-10T11:04:04.980000",
+   "inputs": {"query": "author of Dune"},
+   "outputs": {"output": "Dune was written by Frank Herbert."},
+   "error": null, "events": []},
+
+  {"id": "aa000000-0000-0000-0000-000000000004", "name": "web_search",
+   "run_type": "tool", "parent_run_id": "aa000000-0000-0000-0000-000000000001",
+   "trace_id": "aa000000-0000-0000-0000-000000000001",
+   "dotted_order": "20260910T110402090000Zaa000000-0000-0000-0000-000000000001.20260910T110405100000Zaa000000-0000-0000-0000-000000000004",
+   "start_time": "2026-09-10T11:04:05.100000", "end_time": "2026-09-10T11:04:06.200000",
+   "inputs": {"query": "Frank Herbert university"},
+   "outputs": {"output": "Frank Herbert attended the University of Washington."},
+   "error": "rate limited once, retried", "events": [{"name": "retry", "time": "2026-09-10T11:04:05.600000"}]}
+]

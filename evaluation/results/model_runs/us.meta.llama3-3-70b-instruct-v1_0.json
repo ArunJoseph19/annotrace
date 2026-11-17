@@ -1,0 +1,2698 @@
+{
+ "model": "us.meta.llama3-3-70b-instruct-v1:0",
+ "schema": {
+  "id": "severity",
+  "name": "Severity",
+  "description": "",
+  "ask_reason": true,
+  "questions": [
+   {
+    "id": "severity",
+    "prompt": "Did this step cause or contribute to the run's failure?",
+    "labels": [
+     "Informational",
+     "Warning",
+     "Error",
+     "Critical"
+    ],
+    "applies_to": [
+     "decision",
+     "cycle",
+     "output"
+    ],
+    "ask_if": null
+   },
+   {
+    "id": "critical_type",
+    "prompt": "Which kind of critical failure?",
+    "labels": [
+     "Centralized Agent \u2014 Task decomposition",
+     "Centralized Agent \u2014 Subtask Generation",
+     "Centralized Agent \u2014 Expert Assignment",
+     "Centralized Agent \u2014 Response Process",
+     "Expert Agent \u2014 reasoning",
+     "Expert Agent \u2014 interaction",
+     "Expert Agent \u2014 communication"
+    ],
+    "applies_to": [
+     "decision",
+     "cycle",
+     "output"
+    ],
+    "ask_if": {
+     "question": "severity",
+     "equals": "Critical"
+    }
+   }
+  ]
+ },
+ "system_prompt": "You are helping a human annotator. Answer the questions below about each step of an agent run.\n\n## Questions\n\n- **severity**: Did this step cause or contribute to the run's failure? (only on steps of kind: decision, cycle, output)\n    one of: Informational, Warning, Error, Critical\n- **critical_type**: Which kind of critical failure? (only on steps of kind: decision, cycle, output) -- only when severity is Critical\n    one of: Centralized Agent \u2014 Task decomposition, Centralized Agent \u2014 Subtask Generation, Centralized Agent \u2014 Expert Assignment, Centralized Agent \u2014 Response Process, Expert Agent \u2014 reasoning, Expert Agent \u2014 interaction, Expert Agent \u2014 communication\n\nAlso give a short reason for every step.\n\n## Output\n\nReply with JSON only, no commentary:\n\n```json\n{\n  \"steps\": {\n    \"<step key>\": {\n      \"severity\": \"Informational\",\n      \"critical_type\": \"Centralized Agent \\u2014 Task decomposition\",\n      \"reason\": \"one short sentence\"\n    }\n  }\n}\n```\n\nUse the step keys exactly as given. Leave a question out when it does not apply, rather than inventing a value.\n\n## Extra guidance\n\n# Annotation Handbook\n**Multi-agent LLM failure attribution** \u00b7 prompt v7\n\n***\n\n## The Four Labels\n\n| Label | When to use |\n|---|---|\n| **Critical** | Root cause of the final failure. Fixing only this step would likely fix the output. Every failed trajectory must have at least one. Always include a sub-type. |\n| **Error** | Contributes to failure but is not the root cause. Often downstream propagation of a Critical step. Fixing alone may be insufficient. |\n| **Warning** | Redundant or wasteful action \u2014 3rd+ repeated search, extra coordinator round, slightly imprecise answer. No new failure introduced. |\n| **Informational** | Correct and necessary. Should remain unchanged during optimisation. A step can be decisive for success and still be Informational. |\n\n> **Key distinction:** \"Critical\" means critical *error*, never critical *importance*. A correct step, even a decisive one, is always Informational.\n\n***\n\n## Step Definition\n\nEach step bundles **thinking, action, and response** together as one unit and receives a **single label**. However, the reasoning field should specify *which part* within the step caused the issue \u2014 for example:\n\n- \"Thinking was correct (intended to find Director A), but the search query was too broad and returned irrelevant documents.\"\n- \"Search query was well-formed, but retrieved documents were noisy and misled the subsequent reasoning.\"\n\nThis distinction matters for downstream analysis even though the label applies to the whole step. It is the standard definition used across prior work and allows annotations to generalise across different benchmarks and agent architectures.\n\n> **Note on misalignment within a step:** In some cases thinking is correct but the action is wrong (e.g. poor query formulation), or the action happens to be correct despite wrong reasoning. Label the step based on its contribution to the final failure, and explain the internal misalignment in the reasoning field. A step where reasoning is wrong but the action accidentally succeeds is still a risk \u2014 label it at least Warning if relevant.\n\n***\n\n## Decision Flowchart\n\n**Step 0 \u2014 Check the step type first**\n- `think` \u2192 apply Think Step Rules below\n- `answer` / `final_answer` \u2192 label on output quality only; Warning due to search count is forbidden\n- `search_and_info` \u2192 repeated-query rules apply; also apply Restart Rule\n- `coordinator_thinking` / `expert_call` \u2192 continue to Step 1\n\n**Step 1 \u2014 Did something go wrong?**\n- No \u2192 **Informational** (if necessary) or **Warning** (if redundant)\n- Yes \u2192 Step 2\n\n**Step 2 \u2014 Is this the root cause? Would fixing only this step likely fix the final output?**\n- Yes \u2192 **Critical** + sub-type\n- No \u2192 Step 3\n\n**Step 3 \u2014 Did it contribute to the final failure?**\n- Yes \u2192 **Error**\n- No \u2192 **Warning** (wrong but inconsequential)\n\n> **Pro tip:** Work backwards. Read the final answer first, confirm it's wrong, then trace back to find the earliest step where something went wrong \u2014 that's your Critical.\n\n***\n\n## Error Propagation\n\nWhen a Critical step introduces a wrong assumption or wrong result, subsequent steps that follow from that mistake are **Error** (propagation), not Critical. Only assign a second Critical if a **genuinely new and independent failure** is introduced \u2014 not merely a consequence of the first.\n\n```\nExample \u2014 sequential dependency:\n  Step 1  coordinator assigns wrong sub-task          \u2192  Critical (root cause)\n  Step 2  expert follows the wrong sub-task           \u2192  Error    (propagation)\n  Step 3  coordinator uses wrong expert output        \u2192  Error    (propagation)\n  Step 4  final answer built on wrong info            \u2192  Error    (propagation)\n```\n\n> One root Critical, multiple downstream Errors. The cascade rule applies: do not promote a propagated failure to Critical just because it feels significant.\n\n***\n\n## Restart Rule\n\nWhen an agent **retries** a failed approach (e.g. re-issues a search query after getting no useful results), annotate as follows:\n\n| Attempt | Label | Reason |\n|---|---|---|\n| All attempts except the last | **Warning** | Abandoned \u2014 result not used in the final output |\n| The final attempt | **Critical** or **Error** | Its result feeds into the failure |\n\nThe last attempt is Critical if its output is the direct root cause of the wrong final answer. It is Error if a prior Critical introduced the root failure and this attempt merely propagated it.\n\n```\nExample (agent retries a search three times, uses result of 3rd attempt):\n  Search attempt 1  \u2192  Warning   (abandoned)\n  Search attempt 2  \u2192  Warning   (abandoned)\n  Search attempt 3  \u2192  Critical  (result used; wrong documents caused wrong answer)\n```\n\n> **Exception:** If a prior attempt returned misleading documents that the agent *carried forward* into later reasoning (rather than discarding), that attempt may be **Error** or **Critical** rather than Warning \u2014 because it did contribute to the failure.\n\n> **Reconciliation with Search & Info Rules:** The Restart Rule takes precedence when the agent is clearly cycling through attempts and using only the final result. The Search & Info table (Error \u00d7 2, then Warning) applies to cases where no clear \"restart\" pattern is identifiable and all attempts equally feed into the failure.\n\n***\n\n## Search & Info Rules\n\n| Occurrence | Label |\n|---|---|\n| 1st search returns irrelevant docs | **Error** |\n| 2nd search \u2014 identical query, no strategy change | **Error** |\n| 3rd+ search \u2014 same query repeated | **Warning** (pure waste) |\n| Repeated search returns noisy/misleading docs causing wrong answer | **Error** or **Critical** (not Warning) |\n| Repeated query that looks \"correct\" | Still **Warning** \u2014 repetition count alone determines this |\n\n> **Note:** When the agent only uses the final search result to form its answer (standard LLM behaviour), apply the **Restart Rule** instead \u2014 prior attempts become Warning and the final attempt becomes Critical or Error.\n\n***\n\n## Think Step Rules\n\n- **Rule A** \u2014 Almost never Warning. Thinking wastes no external resource. The search that follows may be Warning, but the thought is not.\n- **Rule B** \u2014 Label on reasoning content, not on adjacent searches.\n- **Rule C** \u2014 When in doubt, default to **Informational**. If the reasoning is not demonstrably wrong, it's Informational.\n- **Rule D** \u2014 Think steps inside a Warning search loop are **Informational**. The Warning belongs on the `search_and_info` step, not the `think` step between them.\n\n```\nPattern in a repeated-search loop:\n  [sN]   (search_and_info)  same query          \u2192  Warning       (wasteful action)\n  [sN+1] (think)            \"I'll try again\"    \u2192  Informational (reasoning is fine)\n  [sN+2] (search_and_info)  same query          \u2192  Warning       (wasteful action)\n  [sN+3] (think)            \"Still no results\"  \u2192  Informational (correct interpretation)\n```\n\n***\n\n## Coordinator Rules\n\n### Mid-trajectory transitions\n| Situation | Label |\n|---|---|\n| Correct sub-task framing and assignment | **Informational** |\n| Wrong sub-task or wrong expert \u2014 introduces new failure | **Critical** (Task decomposition or Expert Assignment) |\n| Extra round caused by prior expert failure | **Warning** (wasteful overhead, not a new error) |\n\n### Final answer / final coordinator step\n| Situation | Label |\n|---|---|\n| Had enough correct info from experts but still produced wrong answer | **Critical** (Response Process) |\n| Introduced a new incorrect factor not in any expert output | **Critical** (Response Process) |\n| Merely propagated a prior expert error without adding a new mistake | **Error** |\n\n### Cascade failures\nOnly one step is the root Critical. When a coordinator introduces a false framing, everything downstream that follows it is Error, not Critical. Only assign a second Critical if a genuinely new and independent failure is introduced.\n\n***\n\n## Sequential vs Parallel Chains\n\n**Sequential** (each expert call depends on the previous):\n- An error early propagates to all downstream steps\n- Downstream steps following the wrong assumption \u2192 **Error**\n- Typically one Critical (root) + multiple Errors (propagation)\n\n**Parallel** (coordinator dispatches independent sub-questions):\n- An error in expert A does not affect expert B's independent branch\n- Expert B's steps can be **Informational** even in a failed trajectory\n- Evaluate each branch independently\n- **Multiple Criticals in parallel branches:** If two independent sub-tasks each retrieve a wrong answer, and the final answer fails because of both, both are Critical. The test is: \"Would fixing only this step have fixed the final output?\" If each sub-task is independently necessary, each failure is independently Critical.\n\n```\nExample \u2014 parallel branches, both fail:\n  Expert A retrieves wrong director name    \u2192  Critical (Expert Agent \u2014 interaction)\n  Expert B retrieves wrong birth date       \u2192  Critical (Expert Agent \u2014 interaction)\n  Coordinator combines both wrong answers  \u2192  Error    (propagation)\n```\n\n***\n\n## Self-Correction and Local Correctness\n\nWhen an agent notices a mistake mid-trajectory and attempts to self-correct, the correction may be:\n\n- **Globally correct** \u2014 fixes the actual error and leads toward the right answer \u2192 label the correction step **Informational**\n- **Locally correct but globally wrong** \u2014 the reasoning appears valid in isolation but pursues the wrong direction (e.g. rechecks a sub-answer that was wrong, but reconfirms the wrong value) \u2192 label as **Error** propagation, not Informational\n\n> **Key test:** Is the self-correction working toward the correct final answer, or just internally consistent within a wrong framing? If the latter, it is still a failure step.\n\n***\n\n## Precision Failures\n\nWhen the answer is factually reasonable but too coarse (e.g. \"Mongolia\" instead of \"Khamag Mongol\", \"Wilhelm R\u00f6ntgen\" instead of full name):\n- `answer` and `final_answer` \u2192 **Warning**\n- Upstream reasoning that was logically correct \u2192 **Informational**\n- Do not label the coordinator's correct identification as Critical\n\n***\n\n## Common Pitfalls\n\n| Wrong | Right |\n|---|---|\n| Labelling a correct coordinator step Critical because it was \"important\" to success | Correct + necessary = Informational, always |\n| Labelling think steps Warning because nearby searches are Warning | Think steps in Warning loops are Informational |\n| Multiple Critical labels in a single cascade | One root Critical \u2014 everything downstream following the same mistake \u2192 Error |\n| Labelling a precision failure (too coarse, not wrong) as Error or Critical | Precision failures \u2192 Warning throughout; upstream reasoning \u2192 Informational |\n| Labelling an `answer` step Warning because nearby searches were repeated | Answer steps are never Warning due to search count |\n| Labelling all retry attempts as Critical or Error | Only the final attempt is Critical/Error; prior abandoned attempts are Warning |\n| Labelling a propagated downstream step as Critical | Error propagation \u2260 new Critical; ask whether a genuinely new failure was introduced |\n| Treating a self-correction as Informational when it stays within a wrong framing | Locally correct \u2260 globally correct; test against the final answer direction |\n\n***\n\n## AI Annotation Support\n\nThe built-in AI label suggester (Groq/LLM) operates on documents retrieved within the trajectory. It does **not** have access to external knowledge and may therefore:\n- Fail to detect hallucinations in coordinator thinking (e.g. false Doctor Who framing)\n- Confirm wrong answers that are not contradicted by the retrieved docs\n\n**Workaround:** For knowledge-intensive questions where the trajectory's retrieval clearly failed, verify the golden answer via a manual web search before finalising labels. This is especially important for questions about obscure facts, proper names, or niche cultural knowledge where the agent and the AI suggester may share the same blind spot.\n\n> This limitation will be addressed in a future version by equipping the AI suggester with search capabilities.\n\n***\n\n## Critical Sub-types Reference\n\nEvery Critical label must include one of these sub-types in parentheses.\n\n**Coordinator-level** (`coordinator_thinking`, `expert_call`, `final_answer`):\n- `Centralized Agent \u2014 Task decomposition`\n- `Centralized Agent \u2014 Subtask Generation`\n- `Centralized Agent \u2014 Expert Assignment`\n- `Centralized Agent \u2014 Response Process`\n\n**Expert-level** (`think`, `search_and_info`, `answer`):\n- `Expert Agent \u2014 reasoning`\n- `Expert Agent \u2014 interaction`\n- `Expert Agent \u2014 communication`\n\n**Example format:**\n```\ncoord_r1: Critical (Centralized Agent \u2014 Task decomposition) | Hallucinated Doctor Who framing not present in the question.\n```\n\n***\n\n*For internal use \u2014 annotation team \u00b7 prompt v7 \u00b7 who&when benchmark*\n\nAnswer severity with the bare label only. When it is Critical, give the sub-type in critical_type, not inside the severity value.",
+ "runs": {
+  "0": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need to find a notable American character actor"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query"
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need to explore other notable American character actors"
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query"
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query"
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query"
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the owner of radio station KWPW"
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly retrieved the owner of radio station KWPW"
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly answered the question"
+    },
+    "coord_r4": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly verified the existence of an American character actor named Bill McCutcheon"
+    },
+    "expert_ci3_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci3_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query"
+    },
+    "expert_ci3_cycle2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly answered the question"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly provided the final answer"
+    }
+   },
+   "usage": {
+    "inputTokens": 7836,
+    "outputTokens": 567,
+    "totalTokens": 8403
+   },
+   "seconds": 4.18,
+   "expected": 18,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need to find a notable American character actor\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need to explore other notable American character actors\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the owner of radio station KWPW\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly retrieved the owner of radio station KWPW\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly answered the question\"\n    },\n    \"coord_r4\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly verified the existence of an American character actor named Bill McCutcheon\"\n    },\n    \"expert_ci3_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci3_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query\"\n    },\n    \"expert_ci3_cycle2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly answered the question\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly provided the final answer\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "1": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need for information about Maria Curcio's student"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with similar query"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with similar query again"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Further repeated search"
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need for information about Sebasti\u00e1n Colombo's lineage"
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with similar query"
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with similar query again"
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Further repeated search"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct final answer provided"
+    }
+   },
+   "usage": {
+    "inputTokens": 7089,
+    "outputTokens": 405,
+    "totalTokens": 7494
+   },
+   "seconds": 3.55,
+   "expected": 11,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need for information about Maria Curcio's student\"\n    },\n    \"expert_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Provided a relevant answer about Sebasti\u00e1n Colombo\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with similar query\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with similar query again\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Further repeated search\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need for information about Sebasti\u00e1n Colombo's lineage\"\n    },\n    \"expert_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Provided the correct lineage information\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with similar query\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with similar query again\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Further repeated search\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correct final answer provided\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "2": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Incorrectly assumed Mick Carter is from Doctor Who"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find the correct information due to incorrect context"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with no new information"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with no new information"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with no new information"
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with no new information"
+    },
+    "expert_ci0_cycle5": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with no new information"
+    },
+    "expert_ci0_cycle6": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with no new information"
+    },
+    "expert_ci0_cycle7": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with no new information"
+    },
+    "expert_ci0_cycle8": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with no new information"
+    },
+    "expert_ci0_cycle9": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with no new information"
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Propagated the incorrect assumption"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Provided an incorrect answer based on previous errors"
+    }
+   },
+   "usage": {
+    "inputTokens": 7746,
+    "outputTokens": 420,
+    "totalTokens": 8166
+   },
+   "seconds": 3.7,
+   "expected": 13,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Incorrectly assumed Mick Carter is from Doctor Who\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find the correct information due to incorrect context\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with no new information\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with no new information\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with no new information\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with no new information\"\n    },\n    \"expert_ci0_cycle5\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with no new information\"\n    },\n    \"expert_ci0_cycle6\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with no new information\"\n    },\n    \"expert_ci0_cycle7\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with no new information\"\n    },\n    \"expert_ci0_cycle8\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with no new information\"\n    },\n    \"expert_ci0_cycle9\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with no new information\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Propagated the incorrect assumption\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Provided an incorrect answer based on previous errors\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "3": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified Genghis Khan as Tem\u00fcge's father and delegated the question to an expert."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved documents mentioning Genghis Khan's death in Mongolia, but did not verify the accuracy of this information."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated the same search query and retrieved similar documents, but still did not verify the accuracy of the information."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Provided an answer based on unverified information from previous cycles."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Provided a final answer that was too coarse and incorrect, stating Genghis Khan died in Mongolia instead of the more specific Khamag Mongol."
+    }
+   },
+   "usage": {
+    "inputTokens": 4173,
+    "outputTokens": 247,
+    "totalTokens": 4420
+   },
+   "seconds": 2.8,
+   "expected": 5,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified Genghis Khan as Tem\u00fcge's father and delegated the question to an expert.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved documents mentioning Genghis Khan's death in Mongolia, but did not verify the accuracy of this information.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated the same search query and retrieved similar documents, but still did not verify the accuracy of the information.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Provided an answer based on unverified information from previous cycles.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Provided a final answer that was too coarse and incorrect, stating Genghis Khan died in Mongolia instead of the more specific Khamag Mongol.\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "4": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need to verify Little Havana's location"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query again"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query once more"
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Continued repeating search with same query"
+    },
+    "expert_ci0_cycle5": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Further repeated search with same query"
+    },
+    "expert_ci0_cycle6": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Finally provided a correct answer"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly provided the final answer"
+    }
+   },
+   "usage": {
+    "inputTokens": 6162,
+    "outputTokens": 316,
+    "totalTokens": 6478
+   },
+   "seconds": 2.93,
+   "expected": 9,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need to verify Little Havana's location\"\n    },\n    \"expert_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Provided a correct reply to the coordinator\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query again\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query once more\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Continued repeating search with same query\"\n    },\n    \"expert_ci0_cycle5\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Further repeated search with same query\"\n    },\n    \"expert_ci0_cycle6\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Finally provided a correct answer\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly provided the final answer\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "5": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need to determine the historical dates of both battles."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Retrieved irrelevant documents."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query again."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query once more."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query multiple times."
+    },
+    "expert_ci0_cycle5": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Final repeated search with same query."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly determined the date of the Battle of Manila and proceeded to find the date of the Battle of Guam."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Retrieved irrelevant documents for the Battle of Guam."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query for the Battle of Guam."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query again for the Battle of Guam."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query once more for the Battle of Guam."
+    },
+    "expert_ci1_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Final repeated search with same query for the Battle of Guam."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly compared the dates and determined the Battle of Guam occurred first."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly provided the final answer based on the comparison of dates."
+    }
+   },
+   "usage": {
+    "inputTokens": 7651,
+    "outputTokens": 516,
+    "totalTokens": 8167
+   },
+   "seconds": 4.1,
+   "expected": 15,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need to determine the historical dates of both battles.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Retrieved irrelevant documents.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query again.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query once more.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query multiple times.\"\n    },\n    \"expert_ci0_cycle5\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Final repeated search with same query.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly determined the date of the Battle of Manila and proceeded to find the date of the Battle of Guam.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Retrieved irrelevant documents for the Battle of Guam.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query for the Battle of Guam.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query again for the Battle of Guam.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query once more for the Battle of Guam.\"\n    },\n    \"expert_ci1_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Final repeated search with same query for the Battle of Guam.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly compared the dates and determined the Battle of Guam occurred first.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly provided the final answer based on the comparison of dates.\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "6": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the ambiguity in the question"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents again"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Failed to find the correct director despite multiple attempts"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Provided an incorrect final answer"
+    }
+   },
+   "usage": {
+    "inputTokens": 4351,
+    "outputTokens": 186,
+    "totalTokens": 4537
+   },
+   "seconds": 2.1,
+   "expected": 5,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the ambiguity in the question\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents again\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"Failed to find the correct director despite multiple attempts\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Provided an incorrect final answer\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "7": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Failed to find the director of Sabar Upare Maa"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information"
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Switched to finding the director of Badhti Ka Naam Dadhi"
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Redundant search"
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Redundant search"
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Redundant search"
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Found the director of Badhti Ka Naam Dadhi"
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Found the birth year of Manish Pandey"
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Redundant search"
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Redundant search"
+    },
+    "expert_ci2_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Redundant search"
+    },
+    "expert_ci2_cycle3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Confirmed the birth year of Manish Pandey"
+    },
+    "coord_r4": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Tried to find the director of Sabar Upare Maa again"
+    },
+    "expert_ci3_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information"
+    },
+    "expert_ci3_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information"
+    },
+    "expert_ci3_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information"
+    },
+    "expert_ci3_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information"
+    },
+    "coord_r5": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Insufficient information to answer the question"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Insufficient information"
+    }
+   },
+   "usage": {
+    "inputTokens": 19931,
+    "outputTokens": 703,
+    "totalTokens": 20634
+   },
+   "seconds": 5.43,
+   "expected": 22,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Failed to find the director of Sabar Upare Maa\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Switched to finding the director of Badhti Ka Naam Dadhi\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Redundant search\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Redundant search\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Redundant search\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Found the director of Badhti Ka Naam Dadhi\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Found the birth year of Manish Pandey\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Redundant search\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Redundant search\"\n    },\n    \"expert_ci2_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Redundant search\"\n    },\n    \"expert_ci2_cycle3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Confirmed the birth year of Manish Pandey\"\n    },\n    \"coord_r4\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Tried to find the director of Sabar Upare Maa again\"\n    },\n    \"expert_ci3_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information\"\n    },\n    \"expert_ci3_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information\"\n    },\n    \"expert_ci3_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information\"\n    },\n    \"expert_ci3_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information\"\n    },\n    \"coord_r5\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Insufficient information to answer the question\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Insufficient information\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "8": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need for an expert to determine Mahmoud Taleghani's religion."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "First attempt to find the religion of Mahmoud Taleghani yielded irrelevant documents."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Second attempt to find the religion of Mahmoud Taleghani still yielded irrelevant documents."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third attempt to find the religion of Mahmoud Taleghani again yielded irrelevant documents."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Finally provided the correct answer after multiple attempts."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly provided the final answer based on the expert's response."
+    }
+   },
+   "usage": {
+    "inputTokens": 5039,
+    "outputTokens": 269,
+    "totalTokens": 5308
+   },
+   "seconds": 4.32,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need for an expert to determine Mahmoud Taleghani's religion.\"\n    },\n    \"expert_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Provided the correct answer directly without needing search results.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"First attempt to find the religion of Mahmoud Taleghani yielded irrelevant documents.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Second attempt to find the religion of Mahmoud Taleghani still yielded irrelevant documents.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Third attempt to find the religion of Mahmoud Taleghani again yielded irrelevant documents.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Finally provided the correct answer after multiple attempts.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly provided the final answer based on the expert's response.\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "9": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need for more context about 'Five Years'."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information about 'Five Years' in the context of culture or entertainment."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Still failed to find relevant information about 'Five Years' after refining the search query."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeatedly failed to find relevant information about 'Five Years' with no improvement in search results."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Concluded that 'Five Years' is a song by Pink Floyd without sufficient evidence."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need to find the composer of 'Five Years' by Pink Floyd."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find accurate information about the composer of 'Five Years' by Pink Floyd."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeatedly failed to find accurate information about the composer of 'Five Years' by Pink Floyd."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Continued to fail in finding accurate information about the composer of 'Five Years' by Pink Floyd."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Concluded with incorrect information that Roger Waters composed 'Five Years'."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Provided a wrong final answer due to the accumulation of errors in previous steps."
+    }
+   },
+   "usage": {
+    "inputTokens": 6339,
+    "outputTokens": 535,
+    "totalTokens": 6874
+   },
+   "seconds": 5.94,
+   "expected": 11,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need for more context about 'Five Years'.\"\n    },\n    \"expert_r1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Provided incorrect information about 'Five Years' being a song by Pink Floyd.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information about 'Five Years' in the context of culture or entertainment.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Still failed to find relevant information about 'Five Years' after refining the search query.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeatedly failed to find relevant information about 'Five Years' with no improvement in search results.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Concluded that 'Five Years' is a song by Pink Floyd without sufficient evidence.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need to find the composer of 'Five Years' by Pink Floyd.\"\n    },\n    \"expert_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Provided incorrect information that Roger Waters composed 'Five Years'.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find accurate information about the composer of 'Five Years' by Pink Floyd.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeatedly failed to find accurate information about the composer of 'Five Years' by Pink Floyd.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Continued to fail in finding accurate information about the composer of 'Five Years' by Pink Floyd.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Concluded with incorrect information that Roger Waters composed 'Five Years'.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Provided a wrong final answer due to the accumulation of errors in previous steps.\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "10": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Incorrectly framed the target country of the German invasion plan"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents that did not provide the correct answer"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information despite searching"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeatedly retrieved irrelevant documents"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to correct the mistake despite multiple attempts"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Provided an incorrect final answer based on the flawed information"
+    }
+   },
+   "usage": {
+    "inputTokens": 4969,
+    "outputTokens": 264,
+    "totalTokens": 5233
+   },
+   "seconds": 3.76,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Incorrectly framed the target country of the German invasion plan\"\n    },\n    \"expert_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Provided an answer based on the information available\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents that did not provide the correct answer\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information despite searching\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeatedly retrieved irrelevant documents\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to correct the mistake despite multiple attempts\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Provided an incorrect final answer based on the flawed information\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "11": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need for an expert"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Still failed to find the correct information"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated the same mistake as before"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Continued to fail in finding the correct information"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Provided an incorrect answer due to the expert's failure"
+    }
+   },
+   "usage": {
+    "inputTokens": 5107,
+    "outputTokens": 242,
+    "totalTokens": 5349
+   },
+   "seconds": 2.98,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need for an expert\"\n    },\n    \"expert_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Provided a direct answer to the question\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Still failed to find the correct information\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated the same mistake as before\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Continued to fail in finding the correct information\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 reasoning\",\n      \"reason\": \"Provided an incorrect answer due to the expert's failure\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "12": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly understood the concept of an orison"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Provided a correct and accurate description of performing an orison"
+    }
+   },
+   "usage": {
+    "inputTokens": 3363,
+    "outputTokens": 80,
+    "totalTokens": 3443
+   },
+   "seconds": 1.31,
+   "expected": 2,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly understood the concept of an orison\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Provided a correct and accurate description of performing an orison\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "13": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need for release dates"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information for Ayat-Ayat Cinta 2 release date"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information for Ayat-Ayat Cinta 2 release date"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information for Ayat-Ayat Cinta 2 release date"
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need for Lost Kisses release date"
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information for Lost Kisses release date"
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information for Lost Kisses release date"
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information for Lost Kisses release date"
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information for Lost Kisses release date"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Incorrectly concluded the release order of the films due to incorrect information"
+    }
+   },
+   "usage": {
+    "inputTokens": 6182,
+    "outputTokens": 386,
+    "totalTokens": 6568
+   },
+   "seconds": 3.46,
+   "expected": 10,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need for release dates\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information for Ayat-Ayat Cinta 2 release date\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information for Ayat-Ayat Cinta 2 release date\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information for Ayat-Ayat Cinta 2 release date\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need for Lost Kisses release date\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information for Lost Kisses release date\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information for Lost Kisses release date\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information for Lost Kisses release date\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information for Lost Kisses release date\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Incorrectly concluded the release order of the films due to incorrect information\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "14": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need to verify the composer of the film score for 'The Fly' (1986)"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information about the composer of 'The Fly' (1986) film score"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated the same search query without modification, still failing to retrieve relevant information"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated the search again without change, continuing the failure to find relevant information"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Another repetition of the search query without adjustment, still not retrieving useful information"
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Yet another repetition of the same search query, failing to adapt and find relevant information"
+    },
+    "expert_ci0_cycle5": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Finally provided an answer, but it was incorrect due to the failure in retrieving and processing relevant information"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "The final answer was incorrect because it was based on the wrong information provided by the expert"
+    }
+   },
+   "usage": {
+    "inputTokens": 5864,
+    "outputTokens": 393,
+    "totalTokens": 6257
+   },
+   "seconds": 4.9,
+   "expected": 8,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need to verify the composer of the film score for 'The Fly' (1986)\"\n    },\n    \"expert_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Provided a direct answer to the coordinator's question\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information about the composer of 'The Fly' (1986) film score\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated the same search query without modification, still failing to retrieve relevant information\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated the search again without change, continuing the failure to find relevant information\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Another repetition of the search query without adjustment, still not retrieving useful information\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Yet another repetition of the same search query, failing to adapt and find relevant information\"\n    },\n    \"expert_ci0_cycle5\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"Finally provided an answer, but it was incorrect due to the failure in retrieving and processing relevant information\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"The final answer was incorrect because it was based on the wrong information provided by the expert\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "15": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need to find birth dates"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find the correct birth date of Mickey Hart"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find the correct birth date of Mickey Hart"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find the correct birth date of Mickey Hart"
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need to find the birth date of Tony Owen"
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find the correct birth date of Tony Owen"
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find the correct birth date of Tony Owen"
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find the correct birth date of Tony Owen"
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find the correct birth date of Tony Owen"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Incorrectly concluded that Mickey Hart was born later than Tony Owen"
+    }
+   },
+   "usage": {
+    "inputTokens": 6261,
+    "outputTokens": 366,
+    "totalTokens": 6627
+   },
+   "seconds": 2.77,
+   "expected": 10,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need to find birth dates\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find the correct birth date of Mickey Hart\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find the correct birth date of Mickey Hart\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find the correct birth date of Mickey Hart\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need to find the birth date of Tony Owen\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find the correct birth date of Tony Owen\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find the correct birth date of Tony Owen\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find the correct birth date of Tony Owen\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find the correct birth date of Tony Owen\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Incorrectly concluded that Mickey Hart was born later than Tony Owen\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "16": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the domain of the question"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated search with same query"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated search with same query again"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repeated search with same query"
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Recognized discrepancy in information"
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents again"
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Provided incorrect answer based on irrelevant documents"
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly relied on verified knowledge"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Provided incorrect final answer due to earlier errors"
+    }
+   },
+   "usage": {
+    "inputTokens": 5745,
+    "outputTokens": 323,
+    "totalTokens": 6068
+   },
+   "seconds": 2.99,
+   "expected": 10,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the domain of the question\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated search with same query\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated search with same query again\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth repeated search with same query\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Recognized discrepancy in information\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents again\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Provided incorrect answer based on irrelevant documents\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly relied on verified knowledge\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Provided incorrect final answer due to earlier errors\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "17": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the domain of the question."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information about the producer of Trauma."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated the search with a slightly different query but still failed to retrieve relevant information."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated the same search query again, which is wasteful and did not provide new information."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Failed to find the correct producer of Trauma and provided an incorrect answer."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Provided an incorrect final answer based on the incorrect information from the expert."
+    }
+   },
+   "usage": {
+    "inputTokens": 4579,
+    "outputTokens": 257,
+    "totalTokens": 4836
+   },
+   "seconds": 3.02,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the domain of the question.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information about the producer of Trauma.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated the search with a slightly different query but still failed to retrieve relevant information.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated the same search query again, which is wasteful and did not provide new information.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"Failed to find the correct producer of Trauma and provided an incorrect answer.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Provided an incorrect final answer based on the incorrect information from the expert.\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "18": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the novel based on the characters and author."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Provided the correct title of the novel."
+    }
+   },
+   "usage": {
+    "inputTokens": 3466,
+    "outputTokens": 78,
+    "totalTokens": 3544
+   },
+   "seconds": 1.04,
+   "expected": 2,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the novel based on the characters and author.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Provided the correct title of the novel.\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "19": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the nautical term related to naval artillery"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Provided the correct nautical term 'gunwale'"
+    }
+   },
+   "usage": {
+    "inputTokens": 3431,
+    "outputTokens": 81,
+    "totalTokens": 3512
+   },
+   "seconds": 0.93,
+   "expected": 2,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the nautical term related to naval artillery\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Provided the correct nautical term 'gunwale'\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "20": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need for genealogical information"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved documents contained relevant information but did not correctly identify the paternal grandfather"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Confirmed the incorrect paternal grandfather based on previous retrieval"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Provided an incorrect final answer due to earlier errors"
+    }
+   },
+   "usage": {
+    "inputTokens": 4161,
+    "outputTokens": 162,
+    "totalTokens": 4323
+   },
+   "seconds": 1.86,
+   "expected": 4,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need for genealogical information\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved documents contained relevant information but did not correctly identify the paternal grandfather\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Confirmed the incorrect paternal grandfather based on previous retrieval\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Provided an incorrect final answer due to earlier errors\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "21": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Incorrect reasoning about Franz Liszt's family relationships"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Incorrect answer due to flawed reasoning"
+    }
+   },
+   "usage": {
+    "inputTokens": 3315,
+    "outputTokens": 98,
+    "totalTokens": 3413
+   },
+   "seconds": 0.89,
+   "expected": 2,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Incorrect reasoning about Franz Liszt's family relationships\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Incorrect answer due to flawed reasoning\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "22": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need to verify the team's name, location, and nickname."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find the correct team playing at Victoria Park due to irrelevant search results."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated the same search query, yielding the same irrelevant results."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Still failed to find the correct team after multiple searches."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Incorrectly concluded that Kilmarnock F.C. plays at Victoria Park."
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Confirmed the incorrect information about Kilmarnock F.C.'s stadium."
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly verified the nickname of Kilmarnock F.C."
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly searched for the nickname of Kilmarnock F.C."
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Repeated the search for the nickname, still finding correct information."
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Continued to find the correct nickname for Kilmarnock F.C."
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Verified the correct nickname again."
+    },
+    "expert_ci1_cycle4": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Finalized the correct nickname for Kilmarnock F.C."
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Correctly concluded that no team matches both the location and nickname criteria."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Provided the correct final answer based on the verification process."
+    }
+   },
+   "usage": {
+    "inputTokens": 7673,
+    "outputTokens": 546,
+    "totalTokens": 8219
+   },
+   "seconds": 4.04,
+   "expected": 14,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need to verify the team's name, location, and nickname.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find the correct team playing at Victoria Park due to irrelevant search results.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated the same search query, yielding the same irrelevant results.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Still failed to find the correct team after multiple searches.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Incorrectly concluded that Kilmarnock F.C. plays at Victoria Park.\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Confirmed the incorrect information about Kilmarnock F.C.'s stadium.\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly verified the nickname of Kilmarnock F.C.\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly searched for the nickname of Kilmarnock F.C.\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Repeated the search for the nickname, still finding correct information.\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Continued to find the correct nickname for Kilmarnock F.C.\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Verified the correct nickname again.\"\n    },\n    \"expert_ci1_cycle4\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Finalized the correct nickname for Kilmarnock F.C.\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Correctly concluded that no team matches both the location and nickname criteria.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Provided the correct final answer based on the verification process.\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "23": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Incorrectly identified director of Torchy Blane film series"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information about Torchy Blane director"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated search with same query, no new information retrieved"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated search with same query, no new information retrieved"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated search with same query, no new information retrieved"
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repeated search with same query, wasteful action"
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Propagated incorrect information about Torchy Blane director"
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information about Torchy Blane director"
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated search with same query, no new information retrieved"
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated search with same query, no new information retrieved"
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated search with same query, no new information retrieved"
+    },
+    "expert_ci1_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repeated search with same query, wasteful action"
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified Frank Tuttle as director of Torchy Blane series"
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Retrieved relevant information about Frank Tuttle's birthplace"
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Retrieved relevant information about Frank Tuttle's birthplace"
+    },
+    "expert_ci2_cycle2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Retrieved relevant information about Frank Tuttle's birthplace"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final answer incorrect due to incorrect propagation of information"
+    }
+   },
+   "usage": {
+    "inputTokens": 8920,
+    "outputTokens": 610,
+    "totalTokens": 9530
+   },
+   "seconds": 5.91,
+   "expected": 17,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Incorrectly identified director of Torchy Blane film series\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information about Torchy Blane director\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated search with same query, no new information retrieved\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated search with same query, no new information retrieved\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated search with same query, no new information retrieved\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth repeated search with same query, wasteful action\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Propagated incorrect information about Torchy Blane director\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information about Torchy Blane director\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated search with same query, no new information retrieved\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated search with same query, no new information retrieved\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated search with same query, no new information retrieved\"\n    },\n    \"expert_ci1_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Fourth repeated search with same query, wasteful action\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified Frank Tuttle as director of Torchy Blane series\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Retrieved relevant information about Frank Tuttle's birthplace\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Retrieved relevant information about Frank Tuttle's birthplace\"\n    },\n    \"expert_ci2_cycle2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Retrieved relevant information about Frank Tuttle's birthplace\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Final answer incorrect due to incorrect propagation of information\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "24": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "correctly identified the source of blood for the pulmonary trunk"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "correctly stated the source of blood for the pulmonary trunk"
+    }
+   },
+   "usage": {
+    "inputTokens": 3258,
+    "outputTokens": 81,
+    "totalTokens": 3339
+   },
+   "seconds": 1.19,
+   "expected": 2,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"correctly identified the source of blood for the pulmonary trunk\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"correctly stated the source of blood for the pulmonary trunk\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "25": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need for specific historical and geographical knowledge"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Retrieved relevant documents containing information about gay bathhouses in New York City"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Successfully found the connection between the Continental Baths and the hotel on the Upper West Side"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Confirmed the hotel's name through repeated search and information retrieval"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Provided the correct final answer based on the information gathered"
+    }
+   },
+   "usage": {
+    "inputTokens": 4764,
+    "outputTokens": 230,
+    "totalTokens": 4994
+   },
+   "seconds": 1.88,
+   "expected": 5,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need for specific historical and geographical knowledge\"\n    },\n    \"expert_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Provided the correct answer based on the information retrieved\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Retrieved relevant documents containing information about gay bathhouses in New York City\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Successfully found the connection between the Continental Baths and the hotel on the Upper West Side\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Confirmed the hotel's name through repeated search and information retrieval\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Provided the correct final answer based on the information gathered\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "26": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the domain of the question."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find the correct answer despite searching."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated the same search query without changing the approach."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated the search query again without improvement."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Returned an incorrect answer after repeated searches."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Provided an incorrect final answer based on the expert's output."
+    }
+   },
+   "usage": {
+    "inputTokens": 4804,
+    "outputTokens": 229,
+    "totalTokens": 5033
+   },
+   "seconds": 2.6,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the domain of the question.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find the correct answer despite searching.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated the same search query without changing the approach.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated the search query again without improvement.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"Returned an incorrect answer after repeated searches.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Provided an incorrect final answer based on the expert's output.\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "27": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct initial reasoning about the Church of the Holy Sepulchre"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents again"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated search with same irrelevant results"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Continued retrieval of irrelevant documents"
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Wasteful repetition of search"
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct clarification of the Franciscans' role"
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information"
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated failure to find relevant information"
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Continued failure to retrieve useful documents"
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Further repetition of unsuccessful search"
+    },
+    "expert_ci1_cycle4": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Wasteful repetition of search"
+    },
+    "expert_ci1_cycle5": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Continued wasteful search"
+    },
+    "expert_ci1_cycle6": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated wasteful search"
+    },
+    "expert_ci1_cycle7": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Further wasteful repetition"
+    },
+    "expert_ci1_cycle8": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Final wasteful search"
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct understanding of shared management"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Incorrect answer due to incomplete information"
+    }
+   },
+   "usage": {
+    "inputTokens": 9771,
+    "outputTokens": 546,
+    "totalTokens": 10317
+   },
+   "seconds": 6.87,
+   "expected": 18,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correct initial reasoning about the Church of the Holy Sepulchre\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents again\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated search with same irrelevant results\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Continued retrieval of irrelevant documents\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Wasteful repetition of search\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correct clarification of the Franciscans' role\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated failure to find relevant information\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Continued failure to retrieve useful documents\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Further repetition of unsuccessful search\"\n    },\n    \"expert_ci1_cycle4\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Wasteful repetition of search\"\n    },\n    \"expert_ci1_cycle5\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Continued wasteful search\"\n    },\n    \"expert_ci1_cycle6\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated wasteful search\"\n    },\n    \"expert_ci1_cycle7\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Further wasteful repetition\"\n    },\n    \"expert_ci1_cycle8\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Final wasteful search\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correct understanding of shared management\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Incorrect answer due to incomplete information\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "28": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the question as a geographic fact."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly answered the question with the capital of Louisiana."
+    }
+   },
+   "usage": {
+    "inputTokens": 3235,
+    "outputTokens": 78,
+    "totalTokens": 3313
+   },
+   "seconds": 0.77,
+   "expected": 2,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the question as a geographic fact.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly answered the question with the capital of Louisiana.\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "29": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Incorrectly assumed the Russian Empire's first prime minister was in 1801"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Provided incorrect final answer of 1801"
+    }
+   },
+   "usage": {
+    "inputTokens": 3318,
+    "outputTokens": 107,
+    "totalTokens": 3425
+   },
+   "seconds": 1.33,
+   "expected": 2,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Incorrectly assumed the Russian Empire's first prime minister was in 1801\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Provided incorrect final answer of 1801\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "30": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the Yongle Emperor's role in moving the capital"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information about the edict's recipient"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated the same search query without finding relevant information"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated the search query again without finding relevant information"
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Incorrectly concluded that the Yongle Emperor was the answer based on incomplete information"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Provided an incorrect final answer due to the earlier mistake"
+    }
+   },
+   "usage": {
+    "inputTokens": 5120,
+    "outputTokens": 246,
+    "totalTokens": 5366
+   },
+   "seconds": 3.34,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the Yongle Emperor's role in moving the capital\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information about the edict's recipient\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated the same search query without finding relevant information\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeated the search query again without finding relevant information\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Incorrectly concluded that the Yongle Emperor was the answer based on incomplete information\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Provided an incorrect final answer due to the earlier mistake\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "31": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Failed to identify the mother of Princess Christina Margarethe of Hesse"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to identify the mother of Princess Christina Margarethe of Hesse"
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Incorrectly identified the father of Princess Irene of Hesse and by Rhine"
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci2_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci2_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci2_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Provided incorrect final answer"
+    }
+   },
+   "usage": {
+    "inputTokens": 9340,
+    "outputTokens": 539,
+    "totalTokens": 9879
+   },
+   "seconds": 5.39,
+   "expected": 17,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Failed to identify the mother of Princess Christina Margarethe of Hesse\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to identify the mother of Princess Christina Margarethe of Hesse\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Incorrectly identified the father of Princess Irene of Hesse and by Rhine\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci2_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci2_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci2_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Provided incorrect final answer\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "32": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the query as film-related"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Retrieved irrelevant documents"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated same query with no new results"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated same query again with no new results"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Failed to find the correct director despite multiple attempts"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Propagated the incorrect answer from the expert"
+    }
+   },
+   "usage": {
+    "inputTokens": 4721,
+    "outputTokens": 210,
+    "totalTokens": 4931
+   },
+   "seconds": 3.78,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the query as film-related\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Retrieved irrelevant documents\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated same query with no new results\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated same query again with no new results\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Expert Agent \u2014 interaction\",\n      \"reason\": \"Failed to find the correct director despite multiple attempts\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Propagated the incorrect answer from the expert\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "33": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Incorrectly identified the domain of knowledge for the question"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information"
+    },
+    "expert_ci0_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to retrieve relevant information and provided an incorrect answer"
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need for a more reliable expert"
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly retrieved information about Otto I, Prince of Anhalt-Aschersleben"
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the paternal grandfather of Otto I, Prince of Anhalt-Aschersleben"
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the paternal grandfather of Otto the Child, Duke of Brunswick-L\u00fcneburg"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Provided an incorrect final answer due to incorrect information"
+    }
+   },
+   "usage": {
+    "inputTokens": 7467,
+    "outputTokens": 432,
+    "totalTokens": 7899
+   },
+   "seconds": 5.31,
+   "expected": 11,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Incorrectly identified the domain of knowledge for the question\"\n    },\n    \"expert_r1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Provided an incorrect answer due to incorrect information\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information\"\n    },\n    \"expert_ci0_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to retrieve relevant information and provided an incorrect answer\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need for a more reliable expert\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly retrieved information about Otto I, Prince of Anhalt-Aschersleben\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the paternal grandfather of Otto I, Prince of Anhalt-Aschersleben\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the paternal grandfather of Otto the Child, Duke of Brunswick-L\u00fcneburg\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Provided an incorrect final answer due to incorrect information\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "34": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "correctly identified the question as factual and historical"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "provided an incorrect format of the emergency number"
+    }
+   },
+   "usage": {
+    "inputTokens": 3293,
+    "outputTokens": 88,
+    "totalTokens": 3381
+   },
+   "seconds": 1.62,
+   "expected": 2,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"correctly identified the question as factual and historical\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"provided an incorrect format of the emergency number\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "35": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified ambiguity in the question"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly retrieved information about asteroid 1222 Tina"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly retrieved information about both asteroid and hurricane Tina"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly determined the context of Tina as an asteroid"
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need for more context about Tina"
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly retrieved information about TINA as a program"
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly retrieved information about TINA as a program and a nucleic acid molecule"
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly determined the context of Tina as a person"
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified Tina Turner as the specific person and determined the associated country"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly provided the final answer as the United States"
+    }
+   },
+   "usage": {
+    "inputTokens": 5958,
+    "outputTokens": 362,
+    "totalTokens": 6320
+   },
+   "seconds": 3.87,
+   "expected": 10,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified ambiguity in the question\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly retrieved information about asteroid 1222 Tina\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly retrieved information about both asteroid and hurricane Tina\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly determined the context of Tina as an asteroid\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need for more context about Tina\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly retrieved information about TINA as a program\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly retrieved information about TINA as a program and a nucleic acid molecule\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly determined the context of Tina as a person\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified Tina Turner as the specific person and determined the associated country\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly provided the final answer as the United States\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "36": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need to find the directors' death dates"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Failed to find relevant information about the director of 'Marriage in Name Only'"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query, no new information found"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query, no new information found"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Finally found the director but through repeated searches"
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need to find Frank Pierson's death date"
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Failed to find relevant information about Frank Pierson's death date"
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query, no new information found"
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query, no new information found"
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Finally found Frank Pierson's death date through repeated searches"
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need to find the director of 'Mille Chilometri Al Minuto!' and their death date"
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Failed to find relevant information about the director of 'Mille Chilometri Al Minuto!'"
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query, no new information found"
+    },
+    "expert_ci2_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query, no new information found"
+    },
+    "expert_ci2_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query, no new information found"
+    },
+    "expert_ci2_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Finally found the director of 'Mille Chilometri Al Minuto!' through repeated searches"
+    },
+    "coord_r4": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need to find Dziga Vertov's death date"
+    },
+    "expert_ci3_cycle0": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Failed to find relevant information about Dziga Vertov's death date"
+    },
+    "expert_ci3_cycle1": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query, no new information found"
+    },
+    "expert_ci3_cycle2": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query, no new information found"
+    },
+    "expert_ci3_cycle3": {
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with same query, no new information found"
+    },
+    "expert_ci3_cycle4": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Finally found Dziga Vertov's death date through repeated searches"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Correctly concluded which director died later based on the found information"
+    }
+   },
+   "usage": {
+    "inputTokens": 11379,
+    "outputTokens": 861,
+    "totalTokens": 12240
+   },
+   "seconds": 6.14,
+   "expected": 23,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need to find the directors' death dates\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Failed to find relevant information about the director of 'Marriage in Name Only'\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query, no new information found\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query, no new information found\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Finally found the director but through repeated searches\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need to find Frank Pierson's death date\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Failed to find relevant information about Frank Pierson's death date\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query, no new information found\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query, no new information found\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Finally found Frank Pierson's death date through repeated searches\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need to find the director of 'Mille Chilometri Al Minuto!' and their death date\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Failed to find relevant information about the director of 'Mille Chilometri Al Minuto!'\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query, no new information found\"\n    },\n    \"expert_ci2_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query, no new information found\"\n    },\n    \"expert_ci2_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query, no new information found\"\n    },\n    \"expert_ci2_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Finally found the director of 'Mille Chilometri Al Minuto!' through repeated searches\"\n    },\n    \"coord_r4\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need to find Dziga Vertov's death date\"\n    },\n    \"expert_ci3_cycle0\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Failed to find relevant information about Dziga Vertov's death date\"\n    },\n    \"expert_ci3_cycle1\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query, no new information found\"\n    },\n    \"expert_ci3_cycle2\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query, no new information found\"\n    },\n    \"expert_ci3_cycle3\": {\n      \"severity\": \"Warning\",\n      \"reason\": \"Repeated search with same query, no new information found\"\n    },\n    \"expert_ci3_cycle4\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Finally found Dziga Vertov's death date through repeated searches\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Correctly concluded which director died later based on the found information\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "37": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Misinterpreted the question due to a non-existent historical event"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Concluded there is no end date for a non-existent battle"
+    }
+   },
+   "usage": {
+    "inputTokens": 3413,
+    "outputTokens": 106,
+    "totalTokens": 3519
+   },
+   "seconds": 2.63,
+   "expected": 2,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Task decomposition\",\n      \"reason\": \"Misinterpreted the question due to a non-existent historical event\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Concluded there is no end date for a non-existent battle\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "38": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need for symbolic association"
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information about the animal associated with envy"
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information about the animal associated with envy"
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information about the animal associated with envy"
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information about the animal associated with envy"
+    },
+    "coord_r2": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need for verification"
+    },
+    "expert_ci1_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information about the animal associated with envy"
+    },
+    "expert_ci1_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information about the animal associated with envy"
+    },
+    "expert_ci1_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information about the animal associated with envy"
+    },
+    "expert_ci1_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information about the animal associated with envy"
+    },
+    "coord_r3": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identified the need for further verification"
+    },
+    "expert_ci2_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information about the animal associated with envy"
+    },
+    "expert_ci2_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information about the animal associated with envy"
+    },
+    "expert_ci2_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information about the animal associated with envy"
+    },
+    "expert_ci2_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Failed to find relevant information about the animal associated with envy"
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly provided the final answer"
+    }
+   },
+   "usage": {
+    "inputTokens": 8654,
+    "outputTokens": 586,
+    "totalTokens": 9240
+   },
+   "seconds": 4.01,
+   "expected": 16,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need for symbolic association\"\n    },\n    \"expert_r1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Provided incorrect information about the animal associated with envy\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information about the animal associated with envy\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information about the animal associated with envy\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information about the animal associated with envy\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information about the animal associated with envy\"\n    },\n    \"coord_r2\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need for verification\"\n    },\n    \"expert_ci1_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information about the animal associated with envy\"\n    },\n    \"expert_ci1_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information about the animal associated with envy\"\n    },\n    \"expert_ci1_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information about the animal associated with envy\"\n    },\n    \"expert_ci1_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information about the animal associated with envy\"\n    },\n    \"coord_r3\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identified the need for further verification\"\n    },\n    \"expert_ci2_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information about the animal associated with envy\"\n    },\n    \"expert_ci2_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information about the animal associated with envy\"\n    },\n    \"expert_ci2_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information about the animal associated with envy\"\n    },\n    \"expert_ci2_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Failed to find relevant information about the animal associated with envy\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly provided the final answer\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  },
+  "39": {
+   "steps": {
+    "coord_r1": {
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correctly identifies the need to determine the context of 'Solo'."
+    },
+    "expert_ci0_cycle0": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Fails to retrieve relevant information about the film 'Solo: A Star Wars Story'."
+    },
+    "expert_ci0_cycle1": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeatedly fails to retrieve relevant information about the film 'Solo: A Star Wars Story'."
+    },
+    "expert_ci0_cycle2": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Continues to fail in retrieving relevant information about the film 'Solo: A Star Wars Story'."
+    },
+    "expert_ci0_cycle3": {
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Ultimately fails to provide accurate information about the author of 'Solo'."
+    },
+    "final_answer": {
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Provides an incorrect final answer due to the errors in the expert's cycles."
+    }
+   },
+   "usage": {
+    "inputTokens": 5291,
+    "outputTokens": 261,
+    "totalTokens": 5552
+   },
+   "seconds": 2.56,
+   "expected": 6,
+   "raw": "```json\n{\n  \"steps\": {\n    \"coord_r1\": {\n      \"severity\": \"Informational\",\n      \"reason\": \"Correctly identifies the need to determine the context of 'Solo'.\"\n    },\n    \"expert_ci0_cycle0\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Fails to retrieve relevant information about the film 'Solo: A Star Wars Story'.\"\n    },\n    \"expert_ci0_cycle1\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Repeatedly fails to retrieve relevant information about the film 'Solo: A Star Wars Story'.\"\n    },\n    \"expert_ci0_cycle2\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Continues to fail in retrieving relevant information about the film 'Solo: A Star Wars Story'.\"\n    },\n    \"expert_ci0_cycle3\": {\n      \"severity\": \"Error\",\n      \"reason\": \"Ultimately fails to provide accurate information about the author of 'Solo'.\"\n    },\n    \"final_answer\": {\n      \"severity\": \"Critical\",\n      \"critical_type\": \"Centralized Agent \u2014 Response Process\",\n      \"reason\": \"Provides an incorrect final answer due to the errors in the expert's cycles.\"\n    }\n  }\n}\n```",
+   "temperature": 0
+  }
+ }
+}

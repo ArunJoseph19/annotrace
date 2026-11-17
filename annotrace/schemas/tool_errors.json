@@ -1,0 +1,13 @@
+{
+  "id": "tool_errors",
+  "name": "Tool use",
+  "description": "An example: three outcomes, with a cause asked on two of them.",
+  "questions": [
+    {"id": "outcome", "prompt": "How did this step go?",
+     "labels": ["Correct", "Recovered", "Failed"]},
+    {"id": "cause", "prompt": "What caused it?",
+     "labels": ["Wrong tool", "Bad arguments", "Unparsed output", "Timeout",
+                "Invented a tool"],
+     "ask_if": {"question": "outcome", "equals": ["Recovered", "Failed"]}}
+  ]
+}

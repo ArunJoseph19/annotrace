@@ -1,0 +1,600 @@
+[
+ {
+  "corpus": "coordinator_40",
+  "n_traces": 40,
+  "model": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "seed": 1,
+  "questions": [
+   {
+    "id": "correctness",
+    "prompt": "Did this step produce or use correct information?",
+    "labels": [
+     "Correct",
+     "Wrong",
+     "Irrelevant to the question"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "efficiency",
+    "prompt": "Was this step a reasonable way to make progress?",
+    "labels": [
+     "Helpful",
+     "Wasted effort",
+     "Gave up too soon"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Mark 'Irrelevant' only when the step answers a different question entirely, not when it's just unhelpful. 'Wasted effort' is for repeated identical searches or queries that clearly won't work; 'Gave up too soon' is for stopping before trying a different approach.",
+  "why": "These labels separate steps that got the facts right from those that didn't, and separately identify whether the agent's strategy was sound or inefficient."
+ },
+ {
+  "corpus": "coordinator_40",
+  "n_traces": 40,
+  "model": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "seed": 2,
+  "questions": [
+   {
+    "id": "correctness",
+    "prompt": "Did this step produce or rely on correct information?",
+    "labels": [
+     "Correct",
+     "Wrong",
+     "Incomplete or vague"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "relevance",
+    "prompt": "Was this step aimed at answering the right question?",
+    "labels": [
+     "On target",
+     "Off target",
+     "Partially relevant"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "A step is 'Wrong' if it states a false fact or draws a false conclusion from facts shown. 'Incomplete' means the step lacks detail needed to verify or use it. 'Off target' means the step answers a different question than the one asked (e.g., asking about Genghis Khan when the question is about Tem\u00fcge's father). Judge each step on its own; do not penalize a step for errors in earlier steps it depends on.",
+  "why": "These labels separate steps that gave bad information from steps that chased the wrong question, so you can see whether the run failed from a bad answer or a bad strategy."
+ },
+ {
+  "corpus": "coordinator_40",
+  "n_traces": 40,
+  "model": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "seed": 3,
+  "questions": [
+   {
+    "id": "correctness",
+    "prompt": "Did this step produce or use correct information?",
+    "labels": [
+     "Correct",
+     "Wrong",
+     "Incomplete or unclear"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "relevance",
+    "prompt": "Was this step on track to answer the original question?",
+    "labels": [
+     "On track",
+     "Off track",
+     "Unclear connection"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "A step is 'Wrong' if it states a false fact or draws a false conclusion from the facts shown. 'Incomplete' means the information given cannot be verified as right or wrong from what is shown. A step is 'Off track' if it pursues a different question than the one asked, even if the step itself is correct.",
+  "why": "These labels separate steps that failed because they got facts wrong from steps that pursued the wrong goal, and flag cases where the truth cannot be judged from the evidence shown."
+ },
+ {
+  "corpus": "coordinator_40",
+  "n_traces": 40,
+  "model": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "seed": 4,
+  "questions": [
+   {
+    "id": "correctness",
+    "prompt": "Did this step produce or rely on correct information?",
+    "labels": [
+     "Correct",
+     "Wrong answer",
+     "Incomplete or unclear",
+     "Off-topic"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "relevance",
+    "prompt": "Was this step needed to answer the original question?",
+    "labels": [
+     "On track",
+     "Wasted effort",
+     "Confused or misdirected"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Wrong answer: the step states a fact that is false. Incomplete: the step gives a partial answer or cuts off mid-sentence. Off-topic: the step addresses a completely different question (e.g., 'Arthur' TV show when the original question was about birth dates). Wasted effort: the step is correct but the agent pursued information that did not help answer the original question.",
+  "why": "These labels separate steps that gave the agent bad information (which caused the wrong final answer) from steps that were simply irrelevant or incomplete."
+ },
+ {
+  "corpus": "coordinator_40",
+  "n_traces": 40,
+  "model": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "seed": 5,
+  "questions": [
+   {
+    "id": "correctness",
+    "prompt": "Is this step's output or conclusion correct?",
+    "labels": [
+     "Correct",
+     "Wrong answer",
+     "Wrong question asked",
+     "Gave up too early"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "mistake_type",
+    "prompt": "What caused the mistake?",
+    "labels": [
+     "Bad search results",
+     "Ignored or misread evidence",
+     "Confused or off-topic",
+     "Reasoning error"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Mark 'Wrong question asked' only when the coordinator misunderstood what was being asked (e.g., asking about a film director when the question was about a book author). Mark 'Gave up too early' when the step stopped searching after a few failed attempts instead of trying different terms. 'Bad search results' means the search engine returned irrelevant documents; 'Ignored or misread evidence' means the right information was available but not used; 'Confused or off-topic' means the step went down a tangent unrelated to the original question.",
+  "why": "These labels identify which step broke the chain and whether the failure was in asking the right question, searching well, or reasoning from what was found."
+ },
+ {
+  "corpus": "coordinator_40",
+  "n_traces": 40,
+  "model": "us.anthropic.claude-opus-5",
+  "seed": 1,
+  "questions": [
+   {
+    "id": "step_ok",
+    "prompt": "Is this step correct and moving the run toward the right answer?",
+    "labels": [
+     "Correct and useful",
+     "Correct but adds nothing",
+     "Wrong or misleading",
+     "Can't tell"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "fault",
+    "prompt": "If something went wrong in this step, what went wrong?",
+    "labels": [
+     "Nothing wrong",
+     "Claim not supported by the retrieved text",
+     "Repeated a search that already failed",
+     "Asked or answered the wrong thing"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Judge the step by its own content, not by whether the final answer turned out right.\nA lucky guess that the retrieved text does not support still counts as unsupported.\nUse \"repeated a search that already failed\" only when the same query brings back the same useless documents.\nCall a final answer wrong when it does not answer the question that was asked.",
+  "why": "They separate steps that actually earn the answer from steps that stall or inject a wrong or unsupported fact, and name which of those failures happened."
+ },
+ {
+  "corpus": "coordinator_40",
+  "n_traces": 40,
+  "model": "us.anthropic.claude-opus-5",
+  "seed": 2,
+  "questions": [
+   {
+    "id": "step_effect",
+    "prompt": "What effect does this step have on getting the right answer?",
+    "labels": [
+     "Moves toward the right answer",
+     "No progress, but no harm",
+     "This is where the wrong answer starts",
+     "Repeats a mistake made earlier"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "error_kind",
+    "prompt": "What went wrong in this step?",
+    "labels": [
+     "Looked for or asked about the wrong thing",
+     "Misread or misused the text it found",
+     "Claimed something the found text does not say",
+     "Nothing went wrong"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Reserve \"where the wrong answer starts\" for the first step stating the bad fact; later steps copying it are \"repeats a mistake\".\nA search that returns useless documents is \"no progress\" unless the query itself targeted the wrong thing.\nAn answer that is true but answers a different question than the one asked still counts as an error.\nCheck the step against the text shown in it as well as against the expected answer.",
+  "why": "They pinpoint the single step that introduced the wrong answer and separate bad searching from bad reading of what was found."
+ },
+ {
+  "corpus": "coordinator_40",
+  "n_traces": 40,
+  "model": "us.anthropic.claude-opus-5",
+  "seed": 3,
+  "questions": [
+   {
+    "id": "step_fault",
+    "prompt": "What is wrong with this step?",
+    "labels": [
+     "Nothing wrong",
+     "Wrong or invented information",
+     "Gaps treated as if filled",
+     "Search goes nowhere or repeats itself"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "origin",
+    "prompt": "Where does the problem in this step come from?",
+    "labels": [
+     "No problem here",
+     "Starts in this step",
+     "Carried over from an earlier step"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Pick \"Gaps treated as if filled\" when a missing year, garbled value or unanswered question is used anyway as if solid.\nRepeating the same query with the same useless results counts as a problem, not as a neutral step.\nJudge a step against what the run actually had in hand, not against outside knowledge.\nA conclusion that happens to be right but rests on bad or missing evidence is still a problem.",
+  "why": "They separate the step that first broke the run from the steps that merely passed the damage along, and name the kind of break."
+ },
+ {
+  "corpus": "coordinator_40",
+  "n_traces": 40,
+  "model": "us.anthropic.claude-opus-5",
+  "seed": 4,
+  "questions": [
+   {
+    "id": "step_fault",
+    "prompt": "What is wrong with this step?",
+    "labels": [
+     "Nothing wrong",
+     "States a fact that is false or not in the evidence",
+     "Hands on information that is missing or garbled",
+     "Repeats or asks for something already done, with no progress"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "blame",
+    "prompt": "How does this step relate to the wrong final answer?",
+    "labels": [
+     "This is where the run went wrong",
+     "Carries forward a mistake made earlier",
+     "Does not affect the final answer"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Judge the step against what was available to it at that moment, not against the expected answer.\nPick \"states a fact that is false or not in the evidence\" when a detail appears nowhere in the retrieved text, even if it happens to be true.\nA search that returns nothing new counts as no progress even when nothing false is said.\nMark only one step per run as where it went wrong; steps that reuse that bad information are carrying it forward.",
+  "why": "It separates the single step that introduced the error from steps that merely passed it along or wasted effort."
+ },
+ {
+  "corpus": "coordinator_40",
+  "model": "us.anthropic.claude-opus-5",
+  "seed": 5,
+  "error": "The model did not return usable JSON.",
+  "raw": "{\n  \"questions\": [\n    {\n      \"id\": \"track\",\n      \"prompt\": \"Did this step keep the run on track toward the right answer?\",\n      \"labels\": [\"On track\", \"Wasted effort but harmless\", \"First step that went wrong\", \"Passed on an earlier mistake\"]\n    },\n    {\n      \"id\": \"mistake\",\n      \"prompt\": \"What is wrong with this step?\",\n      \"labels\": [\"Nothing wrong\", \"Picked the wrong meaning of the question\", \"Stated a fact the search results do not support\", \""
+ },
+ {
+  "corpus": "whowhen_handcrafted",
+  "n_traces": 58,
+  "model": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "seed": 1,
+  "questions": [
+   {
+    "id": "mistake_type",
+    "prompt": "What kind of mistake did this step make?",
+    "labels": [
+     "Search was too vague or used wrong keywords",
+     "Search was reasonable but got poor results",
+     "Step was correct or not the cause of the wrong answer"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Step 8 is the blamed step; focus on whether it caused the final wrong answer. 'Too vague' means the search terms were incomplete or didn't match what was needed (e.g., missing distance or hours info). 'Poor results' means the search was well-formed but the tool returned unhelpful data anyway.",
+  "why": "These labels separate whether the agent's search strategy was flawed from the start, or whether it tried the right approach but got unlucky with the results."
+ },
+ {
+  "corpus": "whowhen_handcrafted",
+  "n_traces": 58,
+  "model": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "seed": 2,
+  "questions": [
+   {
+    "id": "correctness",
+    "prompt": "Did this step lead the agent toward the right answer, or away from it?",
+    "labels": [
+     "Correct direction",
+     "Wrong direction",
+     "Unclear or neutral"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "method",
+    "prompt": "If the step went wrong, what was the mistake?",
+    "labels": [
+     "Skipped necessary action",
+     "Wrong reasoning",
+     "Incomplete or vague instruction"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Use 'Wrong direction' only if the step actively misled or contradicted what was needed. 'Skipped necessary action' means the agent should have done something concrete (like screenshot, count, verify) but did not. 'Wrong reasoning' means the agent made a logical error or false assumption.",
+  "why": "These labels separate steps that helped from those that hurt, and for the harmful ones, whether the problem was laziness, confusion, or faulty logic."
+ },
+ {
+  "corpus": "whowhen_handcrafted",
+  "n_traces": 58,
+  "model": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "seed": 3,
+  "questions": [
+   {
+    "id": "correctness",
+    "prompt": "Did this step provide accurate information needed to answer the question?",
+    "labels": [
+     "Correct",
+     "Wrong answer",
+     "Incomplete or missing data",
+     "Refused or unable to help"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "mistake_type",
+    "prompt": "What went wrong?",
+    "labels": [
+     "Looked up wrong route or carrier",
+     "Found a price but it was incorrect",
+     "Did not actually search or look up the information",
+     "Other"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Answer 'Incomplete or missing data' only if the step tried but failed to get all three carriers' prices. 'Wrong answer' means the price given was factually incorrect for that carrier. 'Did not actually search' means the agent claimed to look something up without evidence it did.",
+  "why": "These labels separate whether a step failed by giving wrong facts, by not trying hard enough, or by searching the wrong thing."
+ },
+ {
+  "corpus": "whowhen_handcrafted",
+  "n_traces": 58,
+  "model": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "seed": 4,
+  "questions": [
+   {
+    "id": "correctness",
+    "prompt": "Did this step provide accurate information needed to answer the question?",
+    "labels": [
+     "Correct",
+     "Wrong answer",
+     "Incomplete or missing data",
+     "Refused or unable to help"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "mistake_type",
+    "prompt": "What went wrong?",
+    "labels": [
+     "Looked up wrong route or carrier",
+     "Found a price but it was incorrect",
+     "Did not actually search or look up the information"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Pick 'Wrong answer' only if the step gave a specific price that contradicts the ground truth. Pick 'Incomplete' if it failed to find or return a price at all. Use the second question only when you picked 'Wrong answer' or 'Incomplete'.",
+  "why": "These labels separate steps that gave the right data from those that gave wrong data, and identify whether the error was a bad search, a bad result, or no search at all."
+ },
+ {
+  "corpus": "whowhen_handcrafted",
+  "n_traces": 58,
+  "model": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "seed": 5,
+  "questions": [
+   {
+    "id": "correctness",
+    "prompt": "Did this step move toward the right answer?",
+    "labels": [
+     "Correct",
+     "Wrong",
+     "Incomplete"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "error_type",
+    "prompt": "What went wrong?",
+    "labels": [
+     "Missed something",
+     "Misidentified an animal",
+     "Unnecessary delay",
+     "Other"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Mark 'Incomplete' only if the step was on track but stopped short of solving it. 'Missed something' means the agent overlooked a crustacean or failed to check all slides. 'Misidentified' means it wrongly classified an animal. 'Unnecessary delay' means it asked for verification it could have done itself from the slide list.",
+  "why": "These labels separate whether a step was sound from what kind of mistake derailed the run."
+ },
+ {
+  "corpus": "whowhen_handcrafted",
+  "n_traces": 58,
+  "model": "us.anthropic.claude-opus-5",
+  "seed": 1,
+  "questions": [
+   {
+    "id": "blame",
+    "prompt": "Is this step the point where the run lost the correct answer?",
+    "labels": [
+     "Yes, the mistake starts here",
+     "Repeats or builds on an earlier mistake",
+     "No, this step is sound",
+     "Can't tell from this step"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "mistake_kind",
+    "prompt": "What is wrong with this step?",
+    "labels": [
+     "Asked for or searched the wrong thing",
+     "States something false or unsupported",
+     "Overlooks or misreads available information",
+     "Nothing wrong"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Pick \"mistake starts here\" only for the earliest step that made the wrong answer likely; later steps that inherit it get \"repeats or builds on\".\nAn instruction too vague to get the needed facts counts as asking for the wrong thing, even if politely worded.\nJudge a step against what was known at that moment, not against the ground truth answer.\nUse \"Can't tell\" only when the content shown is too truncated to judge.",
+  "why": "They separate the single step that caused the wrong answer from innocent and downstream steps, and say whether the failure was a bad request, a false claim, or ignored evidence."
+ },
+ {
+  "corpus": "whowhen_handcrafted",
+  "model": "us.anthropic.claude-opus-5",
+  "seed": 2,
+  "error": "The model did not return usable JSON.",
+  "raw": " --- 5. WebSurfer\n...\n\n  --- 6. Orchestrator (thought)\n...\n\n  --- 7. Orchestrator (thought)\n...\n\n  --- 8. WebSurfer\n...\n\n(etc.)"
+ },
+ {
+  "corpus": "whowhen_handcrafted",
+  "n_traces": 58,
+  "model": "us.anthropic.claude-opus-5",
+  "seed": 3,
+  "questions": [
+   {
+    "id": "step_quality",
+    "prompt": "Did this step move the run toward the correct answer?",
+    "labels": [
+     "Helped",
+     "Wasted effort but harmless",
+     "Introduced a wrong or made-up fact",
+     "Sent the run down the wrong path"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "who_erred",
+    "prompt": "If something went wrong here, where does the fault lie?",
+    "labels": [
+     "Nothing went wrong",
+     "The instruction given was bad",
+     "The work done was bad",
+     "The website or tool failed"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Judge only what this step adds, not mistakes inherited from earlier steps.\nPick \"Introduced a wrong or made-up fact\" for any price, rate, or claim not actually seen on the page.\nA step that returns nothing useful is \"Wasted effort\" unless later steps relied on it.\nBlank or failed page loads count as the tool failing, not bad work.",
+  "why": "Separates steps that advanced the shipping-price answer from those that stalled, invented numbers, or misdirected the run, and pins the blame on the order, the worker, or the site."
+ },
+ {
+  "corpus": "whowhen_handcrafted",
+  "n_traces": 58,
+  "model": "us.anthropic.claude-opus-5",
+  "seed": 4,
+  "questions": [
+   {
+    "id": "step_quality",
+    "prompt": "Did this step move the run toward the correct answer?",
+    "labels": [
+     "Helped",
+     "Wasted effort but harmless",
+     "Introduced a wrong or made-up fact",
+     "Went off the task or gave up too early"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "blame",
+    "prompt": "Is this the step that caused the final answer to be wrong?",
+    "labels": [
+     "Yes, the wrong answer starts here",
+     "No, but it passed along an earlier problem",
+     "No, it was fine"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Judge only what the step itself says or does, not what later steps reveal.\nPick \"Introduced a wrong or made-up fact\" for any price, rate, or claim not actually seen on a page.\nA step that returns nothing useful after an action is \"Wasted effort\", not \"Helped\".\nOnly one step per run should get \"the wrong answer starts here\"; later repeats are \"passed along an earlier problem\".",
+  "why": "These labels separate steps that genuinely advanced the shipping-price lookup from those that stalled, invented data, or drifted, and pinpoint the single step where the wrong answer originated."
+ },
+ {
+  "corpus": "whowhen_handcrafted",
+  "n_traces": 58,
+  "model": "us.anthropic.claude-opus-5",
+  "seed": 5,
+  "questions": [
+   {
+    "id": "harm",
+    "prompt": "How does this step affect the final answer?",
+    "labels": [
+     "Helps or is harmless",
+     "Sloppy but still recoverable",
+     "Causes the wrong answer"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   },
+   {
+    "id": "mistake",
+    "prompt": "What went wrong in this step?",
+    "labels": [
+     "Nothing went wrong",
+     "Wrong fact or wrong classification",
+     "Ignored or misread the given material",
+     "Confused, contradictory, or dropped work"
+    ],
+    "applies_to": [],
+    "ask_if": null
+   }
+  ],
+  "rules": "Use \"Causes the wrong answer\" at most once per run, at the earliest step where the error can no longer be fixed.\nJudge the step using only what was known at that point, not what later steps reveal.\nPut an animal in the wrong group counts as a wrong fact, not confused reasoning.\nRepeating an earlier mistake without adding a new one is \"Sloppy but still recoverable\".",
+  "why": "They separate the one step that broke the answer from merely weak steps, and record what kind of error it was."
+ }
+]

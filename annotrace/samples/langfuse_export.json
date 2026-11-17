@@ -1,0 +1,41 @@
+{
+  "traces": [
+    {"id": "tr-01", "timestamp": "2026-09-10 11:04:02.113000", "name": "research-agent",
+     "environment": "production", "project_id": "p-9", "user_id": "u-22",
+     "session_id": "s-4", "tags": ["agent", "search"],
+     "input": "Which university did the author of Dune attend?",
+     "output": "The University of Washington.", "public": false, "bookmarked": false}
+  ],
+  "observations": [
+    {"id": "ob-1", "trace_id": "tr-01", "parent_observation_id": null,
+     "is_root_observation": true, "type": "AGENT", "name": "research-agent",
+     "level": "DEFAULT", "start_time": "2026-09-10 11:04:02.113000",
+     "input": "Which university did the author of Dune attend?",
+     "output": "The University of Washington.", "latency": 6.41},
+    {"id": "ob-2", "trace_id": "tr-01", "parent_observation_id": "ob-1",
+     "type": "GENERATION", "name": "plan", "level": "DEFAULT",
+     "provided_model_name": "gpt-4o", "start_time": "2026-09-10 11:04:02.200000",
+     "input": "[{\"role\":\"user\",\"content\":\"Which university did the author of Dune attend?\"}]",
+     "output": "I should find the author of Dune first.",
+     "tool_call_names": ["web_search"],
+     "usage_details": {"input": 412, "output": 38, "total": 450},
+     "total_cost": 0.0021, "latency": 1.82},
+    {"id": "ob-3", "trace_id": "tr-01", "parent_observation_id": "ob-1",
+     "type": "TOOL", "name": "web_search", "level": "DEFAULT",
+     "start_time": "2026-09-10 11:04:04.050000",
+     "input": "{\"q\":\"author of Dune\"}",
+     "output": "Dune was written by Frank Herbert.", "latency": 0.93},
+    {"id": "ob-4", "trace_id": "tr-01", "parent_observation_id": "ob-1",
+     "type": "TOOL", "name": "web_search", "level": "WARNING",
+     "status_message": "low confidence result",
+     "start_time": "2026-09-10 11:04:05.100000",
+     "input": "{\"q\":\"Frank Herbert university\"}",
+     "output": "Frank Herbert attended the University of Washington.", "latency": 1.10},
+    {"id": "ob-5", "trace_id": "tr-01", "parent_observation_id": "ob-1",
+     "type": "GENERATION", "name": "answer", "level": "DEFAULT",
+     "provided_model_name": "gpt-4o", "start_time": "2026-09-10 11:04:06.400000",
+     "input": "[{\"role\":\"user\",\"content\":\"Summarise\"}]",
+     "output": "Frank Herbert attended the University of Washington.",
+     "usage_details": {"input": 611, "output": 19, "total": 630}, "latency": 1.44}
+  ]
+}

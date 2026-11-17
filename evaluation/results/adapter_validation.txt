@@ -1,0 +1,7 @@
+TRAIL GAIA (OpenInference spans)         otel_genai    files= 117 detected= 117 unique= 117 traces=117/117 steps=3579/3579 count_ok=117 depth_ok=117 empty_steps=468 []
+TRAIL SWE-bench (OpenInference spans)    otel_genai    files=  31 detected=  31 unique=  31 traces=31/31 steps=1047/1047 count_ok=31 depth_ok=31 empty_steps=56 []
+tau-bench retail (chat + tool calls)     chat_messages files=   2 detected=   2 unique=   2 traces=129/129 steps=3971/3971 count_ok=129 depth_ok=129 empty_steps=58 []
+Who&When Hand-Crafted                    who_and_when  files=  58 detected=  58 unique=  58 traces=58/58 steps=2993/2993 count_ok=58 depth_ok=58 empty_steps=0 []
+Who&When Algorithm-Generated             who_and_when  files= 126 detected= 126 unique= 126 traces=126/126 steps=1099/1099 count_ok=126 depth_ok=126 empty_steps=2 []
+AgentRx Magentic-One                     chat_messages files=  58 detected=  58 unique=  58 traces=58/58 steps=2993/2993 count_ok=58 depth_ok=58 empty_steps=0 []
+CORRECT (Who&When schema)                who_and_when  files=   4 detected=   4 unique=   4 traces=4/4 steps=85/85 count_ok=4 depth_ok=4 empty_steps=0 []

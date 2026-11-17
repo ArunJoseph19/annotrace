@@ -1,0 +1,3494 @@
+{
+ "format_version": 4,
+ "schema": {
+  "id": "severity",
+  "name": "Severity",
+  "description": "",
+  "ask_reason": true,
+  "questions": [
+   {
+    "id": "severity",
+    "prompt": "Did this step cause or contribute to the run's failure?",
+    "labels": [
+     "Informational",
+     "Warning",
+     "Error",
+     "Critical"
+    ],
+    "applies_to": [
+     "decision",
+     "cycle",
+     "output"
+    ],
+    "ask_if": null
+   },
+   {
+    "id": "critical_type",
+    "prompt": "Which kind of critical failure?",
+    "labels": [
+     "Centralized Agent \u2014 Task decomposition",
+     "Centralized Agent \u2014 Subtask Generation",
+     "Centralized Agent \u2014 Expert Assignment",
+     "Centralized Agent \u2014 Response Process",
+     "Expert Agent \u2014 reasoning",
+     "Expert Agent \u2014 interaction",
+     "Expert Agent \u2014 communication"
+    ],
+    "applies_to": [
+     "decision",
+     "cycle",
+     "output"
+    ],
+    "ask_if": {
+     "question": "severity",
+     "equals": "Critical"
+    }
+   }
+  ]
+ },
+ "adapter": "coordinator",
+ "kinds": [
+  "decision",
+  "cycle",
+  "output"
+ ],
+ "source_file": "subset_40_stratified.jsonl",
+ "exported_at": "2026-11-16T23:13:05",
+ "traces": [
+  {
+   "trace_id": "subset_40_stratified.jsonl#0",
+   "title": "The owner of radio station KWPW has the same name as an American character actor. What is it?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the need to find both the radio station owner and verify they share a name with a character actor.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search for notable American character actors returned irrelevant documents (Character actor definition, State actor legal definition) that did not provide useful information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated with no strategy change, returning the same irrelevant documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of identical search query with no new strategy, pure waste of resources.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repetition of identical search query; expert provided hallucinated answer 'Charlie Chaplin' not supported by retrieved documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly rejected Charlie Chaplin as not matching the criteria and pivoted to ask for other character actors.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search for notable American character actors returned the same irrelevant documents as before.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated again with no strategy change.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of identical search query in this cycle, returning same irrelevant documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repetition of identical search query; expert provided hallucinated answer 'Marlon Brando' not supported by retrieved documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r3",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator made a reasonable pivot to directly search for the radio station owner rather than continuing the unproductive character actor search.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Search successfully retrieved relevant document identifying Bill McCutcheon as owner of KWPW radio station.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Expert correctly identified and provided the answer Bill McCutcheon based on the retrieved document.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r4",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified that Bill McCutcheon is the radio station owner and appropriately asked to verify if this name matches an American character actor.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci3_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search for 'American character actor named Bill McCutcheon' returned irrelevant documents about whangee canes and road agents, not about Bill McCutcheon the actor.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci3_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Bill McCutcheon' returned documents about Russell T. McCutcheon (scholar) and other unrelated McCutcheons, not the character actor; expert misinterpreted results and provided unsupported affirmative answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci3_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Expert reasoning incorrectly concluded there is a software engineer named Bill McCutcheon when the task required finding a character actor; the retrieved documents did not support the affirmative answer but expert provided it anyway.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Final answer 'Bill McCutcheon' is correct despite the flawed verification process; the coordinator successfully assembled the correct answer from the reliable information obtained in expert_ci2.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#1",
+   "title": "Maria Curcio taught a classical pianist who is of what South American lineage?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the need to decompose the question into two sub-tasks: identifying Maria Curcio's student and determining their South American lineage.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search query returned irrelevant documents about botanical gardens and unrelated people; no useful information about Maria Curcio's students.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search query returned generic piano pedagogy articles; while Sebasti\u00e1n Colombo's name appears in a citation, the retrieved documents do not confirm he was taught by Maria Curcio.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query to cycle1 with same irrelevant results; repetitive search without strategy change.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search query identical to cycle0; returns same irrelevant documents about botanical gardens and unrelated people.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified that the first expert's answer (Sebasti\u00e1n Colombo) was incomplete and appropriately delegated the follow-up question about lineage to a second expert.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search returned documents about unrelated people named Colombo (Christopher Columbus's father, an Argentine bishop) rather than the classical pianist Sebasti\u00e1n Colombo; expert proceeded to answer despite irrelevant retrieval.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Identical search query to cycle0 with identical irrelevant results; expert did not adjust strategy despite clear retrieval failure.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Third repetition of the same failed search query; continued retrieval of irrelevant documents about unrelated Colombos.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Fourth repetition of essentially the same search (minor spelling variation); retrieved same irrelevant documents yet expert still provided answer 'Argentine' without supporting evidence from the retrieved documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Final answer 'Argentine' matches the expected answer and is correct, despite the retrieval failures upstream; the coordinator correctly synthesized the expert responses.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#2",
+   "title": "Mick Carter is the landlord of a public house located at what address?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator misidentified Mick Carter as a Doctor Who character instead of recognizing him as an EastEnders character, fundamentally misdirecting the entire search.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search retrieved correct EastEnders information about Mick Carter but expert failed to recognize this contradicts the Doctor Who framing and extract the pub address.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated with no strategy change; abandoned attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated again; abandoned attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated; abandoned attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated; abandoned attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle5",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated; abandoned attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle6",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated; abandoned attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle7",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated; abandoned attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle8",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated; abandoned attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle9",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final search attempt retrieved correct EastEnders information but expert failed to extract the pub address (The Queen Victoria at 46 Albert Square) and instead concluded no address exists.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator accepted the false conclusion that no address exists rather than recognizing the retrieved documents contained the answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final answer incorrectly states no address exists when the correct address (46 Albert Square, Walford, London E20) was available in retrieved documents.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#3",
+   "title": "Where did Tem\u00fcge's father die?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator incorrectly identified Tem\u00fcge's father as Genghis Khan; Tem\u00fcge was Genghis Khan's brother, not his son, causing the entire search to pursue the wrong person.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search query returned documents about \u00d6gedei Khan's death (1241) rather than Genghis Khan's death, but the expert did not notice the mismatch and continued with the wrong information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Second search with refined query still returned documents about \u00d6gedei Khan and general Mongolia references, propagating the confusion from the prior incorrect task framing.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Expert concluded 'Mongolia' based on retrieved documents, but this is too coarse and does not match the expected answer 'Khamag Mongol'; the expert accepted a vague location without seeking more specific information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator output 'Mongolia' propagates the upstream errors; the answer is imprecise and incorrect relative to the expected 'Khamag Mongol'.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#4",
+   "title": "What city has a neighborhood called Little Havana?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the task and delegated appropriately to find where Little Havana is located.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Search query returned irrelevant documents (film, album, musical) instead of information about the Little Havana neighborhood; first failed attempt to retrieve relevant information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Identical search query repeated with no strategy change, returning the same irrelevant documents; second failed attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of identical query with no strategy adjustment; pure waste of cycles.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repetition of identical query; continued wasteful cycling.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fifth repetition of identical query; continued wasteful cycling.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle5",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Sixth repetition of identical query; continued wasteful cycling.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle6",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Despite retrieving only irrelevant documents throughout all cycles, the expert answered 'Miami' correctly, suggesting the answer came from prior knowledge rather than the search results; the final answer is correct but not grounded in the retrieved information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Final answer 'Miami' is correct and matches the expected answer; the coordinator properly relayed the expert's response.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#5",
+   "title": "Which battle occurred first, the Battle of Manila or the Battle of Guam?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the need to find dates for both battles to compare them.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Battle of Manila' returned irrelevant documents (films, unrelated content) instead of historical battle information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Identical search query repeated with no strategy change, still returning irrelevant results.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of identical search query with no new strategy; pure waste of search attempts.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repetition of identical search query; continued wasteful cycling.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fifth repetition of identical search query; continued wasteful cycling.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle5",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Final search attempt still returned irrelevant documents, yet expert provided answer '1945' without valid source support, establishing incorrect date for Battle of Manila.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly proceeded to gather information about the Battle of Guam to complete the comparison.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Battle of Guam' returned irrelevant documents (general Guam info, video game) instead of historical battle information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Identical search query repeated with no strategy change, still returning irrelevant results.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of identical search query with no new strategy; pure waste of search attempts.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repetition of identical search query; continued wasteful cycling.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Final search attempt returned irrelevant documents, but expert provided correct answer 'December 10, 1941' for Battle of Guam, likely from prior knowledge rather than retrieved documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r3",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly compared the two dates (December 10, 1941 vs 1945) and reached the correct conclusion that Battle of Guam occurred first.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Final answer 'the Battle of Guam' is correct and matches the expected answer, despite retrieval failures during the process.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#6",
+   "title": "Who was the director of Arthur?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator misinterpreted the question as asking about the animated TV series 'Arthur' rather than the 1981 film 'Arthur', introducing a wrong framing that led to the incorrect final answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search query returned irrelevant documents (Isaac Arthur YouTube channel, generic animation director info) that did not address the animated TV series, propagating the coordinator's wrong framing.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search strategy with no meaningful modification; abandoned attempt that did not contribute to the final answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final search attempt returned the same irrelevant documents and the expert extracted 'Marc Lawrence' from these noisy results, directly causing the wrong final answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator propagated the wrong answer from the expert without correction, following from the initial task decomposition error.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#7",
+   "title": "Which film has the director born earlier, Sabar Upare Maa or Badhti Ka Naam Dadhi?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the need to find directors and their birth dates to answer the comparison question.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Search for 'Sabar Upare Maa' returned irrelevant documents (Kannada text about Uppar community, unrelated to the film), failing to retrieve the film information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Repeated search with refined query 'director of the film Sabar Upare Maa' still returned irrelevant documents, no progress made.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical search attempt with same query, wasteful repetition of failed approach.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth identical search attempt, pure waste with no new information retrieved.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator reasonably pivoted to searching for the second film's director after the first search failed, a logical strategy.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Search for 'Badhti Ka Naam Dadhi' director returned irrelevant documents about foundations and charities, not the film.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Refined search still returned irrelevant documents about foundations, failed to retrieve film information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical search attempt, wasteful repetition.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth identical search attempt, pure waste; however expert somehow provided answer 'Manish Pandey' despite no relevant documents retrieved.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r3",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly proceeded to find Manish Pandey's birth date after receiving the director name.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Search for 'Manish Pandey born' returned documents about Manoj Kumar Pandey (military officer), not the film director Manish Pandey.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Refined search still returned wrong person (Manoj Kumar Pandey), failed to retrieve correct director's birth date.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical search attempt, wasteful repetition.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Expert provided answer '1982' despite retrieving only documents about wrong person (Manoj Kumar Pandey); this is a hallucination that becomes the basis for incomplete comparison.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r4",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly attempted to find the director of 'Sabar Upare Maa' to complete the comparison.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci3_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Search for 'Sabar Upare Maa' returned irrelevant documents, same failure as earlier cycles.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci3_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Refined search still returned irrelevant documents, no progress on finding the film director.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci3_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical search attempt, wasteful repetition.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci3_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth identical search attempt, pure waste.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r5",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly concluded that insufficient information was available after failing to retrieve the director of 'Sabar Upare Maa'.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Final answer 'Insufficient information' is incorrect; the expected answer is 'Badhti Ka Naam Dadhi'. The coordinator should have attempted alternative search strategies or acknowledged that one director's information was found (Manish Pandey, 1982) while the other could not be retrieved, rather than declaring insufficient information.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#8",
+   "title": "What is the religion of Mahmoud Taleghani?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the need to consult an expert for factual verification of Mahmoud Taleghani's religion.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Search query returned irrelevant documents about Nassim Nicholas Taleb and Ingo Taleb Rashid instead of Mahmoud Taleghani, indicating a retrieval failure.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Identical search query repeated without strategy change, returning the same irrelevant documents about unrelated individuals.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of the same query with no results improvement; pure waste of search attempts.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Despite receiving only irrelevant documents about other people named Taleb, the expert provided the correct answer 'Shia Islam' without any supporting evidence from the retrieved documents, indicating hallucination or prior knowledge rather than information retrieval.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Final answer 'Shia Islam' is correct and matches the expected answer, despite the flawed retrieval process.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#9",
+   "title": "Who was the composer of Five Years?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator misidentified the nature of 'Five Years' as requiring clarification, when it is actually a well-known David Bowie song; this fundamental misframing led to the wrong expert being consulted and the wrong answer being pursued.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Five Years' returned irrelevant documents about fifth grade education, failing to retrieve information about the song.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Repeated search with refined query still returned irrelevant documents about education and entertainment in general, not about the specific song.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated with no strategy change, producing the same irrelevant results.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Expert concluded 'Five Years' is a song by Pink Floyd based on failed search results, introducing a false premise that propagated through the rest of the trajectory.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator accepted the false premise that 'Five Years' is a Pink Floyd song and delegated to find its composer, propagating the earlier misidentification.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for composer of 'Five Years' by Pink Floyd returned irrelevant documents unrelated to the query, but expert proceeded with an answer anyway.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated with no strategy change, producing the same irrelevant results.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search query repeated again identically with no new strategy, continuing to retrieve irrelevant documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Expert provided 'Roger Waters' as the composer despite having no relevant search results to support this answer, propagating the false premise from the earlier misidentification.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator output 'Roger Waters' as the final answer, which is incorrect; the correct answer is David Bowie, propagating the cascade of errors from the initial misidentification.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#10",
+   "title": "Ikarus was the codename for the proposed German invasion of which country?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator incorrectly framed Ikarus as targeting Eastern Europe, when the actual historical operation Unternehmen Ikarus was a proposed invasion of Iceland.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search query returned irrelevant mythological results about Icarus; expert misinterpreted Greece reference from mythology as the answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search query returned fictional Nazi doomsday plans unrelated to Ikarus; no relevant historical information retrieved.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query to cycle0 repeated without strategy change, returning same irrelevant mythological results.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated again with no new strategy; pure waste of retrieval attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator accepted the expert's incorrect answer (Greece) without verification, propagating the retrieval failure into the final output.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#11",
+   "title": "\"The Simpson's\" episode featuring the  \"Itchy & Scratchy & Poochie\" show satirized the world of television production just as the episode featuring the \"Itchy & Scratchy & Marge\" satirized what type of issue?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the need to query an expert about the specific episode's satirical content.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search query returned irrelevant documents (Kingdom of Loathing, webworms, names) unrelated to The Simpsons episode.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Search retrieved documents about class discrimination and a different Marge episode (Marge vs. Singles...) but not the actual 'Itchy & Scratchy & Marge' episode; expert incorrectly concluded class discrimination based on misleading retrieval.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated with no strategy change, returning the same irrelevant/misleading documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of identical search query with no new information or strategy adjustment.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator propagated the expert's incorrect answer (class discrimination) instead of the correct answer (censorship); the final output is wrong due to the upstream expert retrieval failure.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#12",
+   "title": "If you were performing an orison what would you be doing?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The reasoning correctly identifies that an orison is a formal prayer or devotional act in a religious context.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "The answer is descriptive but fails to directly answer the question; it should state 'you would be praying' or similar, matching the expected answer format which emphasizes the action of prayer itself.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#13",
+   "title": "Which film came out first, Ayat-Ayat Cinta 2 or Lost Kisses?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the need to retrieve release dates for both films to answer the comparison question.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Ayat-Ayat Cinta 2 release date' returned irrelevant documents about /e/ operating system and Malaysia programs, not the film.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Identical search query repeated with no strategy change, returning the same irrelevant documents about operating systems and Malaysia.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Expert extracted '1997' from an unrelated document about HIV transmission (mentioning a 1997 case) and reported it as the release date of Ayat-Ayat Cinta 2, which is factually incorrect; this hallucinated date became the basis for the wrong final answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly proceeded to request the release date of the second film after receiving (incorrect) information about the first.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Lost Kisses' returned irrelevant documents about kissing and candy, not the film.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'release date of Lost Kisses' returned the same irrelevant documents about candy and kissing, no strategy improvement.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Identical search query repeated again with no new strategy, returning the same irrelevant results.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Expert extracted '1997' from an unrelated document about HIV transmission and reported it as the release date of Lost Kisses, which is factually incorrect.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator correctly compared the two dates (1997 vs 2018) and reached the logically correct conclusion that Lost Kisses came out first, but both underlying dates were hallucinated by the expert, making the final answer accidentally correct in form but based entirely on false premises.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#14",
+   "title": "Who was the composer of The Fly?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the question as referring to the 1986 film and appropriately delegated to an expert.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search query returned irrelevant documents (LAG Insecte, Fly system) unrelated to The Fly film score; first failed retrieval attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Identical search query repeated with no strategy change, returning the same irrelevant documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of identical query with no modification; pure waste of search attempts.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repetition of identical query; continued wasteful cycling.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fifth repetition of identical query; continued wasteful cycling.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle5",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Final search attempt returned irrelevant documents but expert still provided answer 'Jerry Goldsmith' without valid source support; this hallucinated answer is the root cause of the wrong final output.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator propagated the expert's hallucinated answer without verification; the wrong answer traces back to the expert's unsupported claim.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#15",
+   "title": "Who was born later, Mickey Hart or Tony Owen?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the need to find both birth dates to answer the comparison question.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Mickey Hart' returned irrelevant documents (Philip Hart, facial hair in military) that did not contain Mickey Hart's birth date.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Mickey Hart birth date' still returned irrelevant results (Terry Hart, Patrick H. Hart) instead of the Grateful Dead percussionist's actual birth date.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Expert provided 'October 2\u0105\u017c' (corrupted/incomplete date) as Mickey Hart's birth date, which is factually incorrect; the actual birth date is September 20, 1950, not October 2, 1948.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly proceeded to request Tony Owen's birth date after receiving Mickey Hart's information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Tony Owen' returned results about Steve Owen (racing driver born 1974), not the correct Tony Owen (footballer born 1931).",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'birth date of Tony Owen' returned results about Arthur Owen (racing driver born 1915) instead of the correct Tony Owen.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated with no strategy change, returning the same irrelevant results about Arthur Owen.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Expert provided '20 July 1931' as Tony Owen's birth date despite searches returning only Arthur Owen and other unrelated people; this appears to be a hallucinated or incorrectly sourced answer that contradicts the retrieved documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator's conclusion that Mickey Hart was born later is incorrect; based on the provided dates (October 2, 1948 vs July 20, 1931), the logic is sound, but both underlying birth dates are wrong, making the final answer wrong.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#16",
+   "title": "What is Adil Shamoo's occupation?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the question as requiring expert knowledge and delegated appropriately.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search query returned irrelevant documents about Pakistani naval officers (Shamoon Alam Khan, Abdulla Shamaal) instead of Adil Shamoo, the biochemist.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated with no strategy change, retrieving the same irrelevant documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of identical search query with no modification, pure waste of resources.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repetition of identical search query, continuing the wasteful cycle.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly recognized the discrepancy between retrieved information and known facts, attempting to verify with another query.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Modified search query still returned irrelevant documents about Pakistani naval officers rather than Adil Shamoo the biochemist.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Expert extracted 'naval officer' from irrelevant retrieved documents, propagating the wrong information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r3",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly recognized the retrieved information was wrong and relied on verified knowledge to provide the accurate answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final answer is incorrect; Adil Shamoo is a biochemist/biological chemist, not a bioethics professor, though the coordinator's reasoning about discrepancy was sound.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#17",
+   "title": "Who was the producer of Trauma?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified that the question requires expert knowledge about media/entertainment and appropriately delegated to an expert.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Search query returned irrelevant documents about psychological trauma rather than the TV show Trauma, indicating a failed retrieval that should have prompted query reformulation.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Second search with modified query still returned irrelevant psychological trauma documents, continuing the retrieval failure without successful strategy change.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third identical search attempt returned the same irrelevant results; pure repetition without new information or strategy adjustment.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Final search attempt still retrieved only psychological trauma documents but the expert concluded 'Jeff Melman' as the answer despite no supporting evidence in retrieved documents, indicating hallucination or incorrect inference from absent information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator propagated the expert's incorrect answer (Jeff Melman, who is a TV director, not the producer of the show Trauma) without verification or correction.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#18",
+   "title": "Dmitri, Ivan and Alexei are the eponymous central characters of which 1880 novel by Fyodor Dostoyevsky?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the novel based on the three central characters, publication year, and author.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Final answer matches the expected answer and is factually correct.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#19",
+   "title": "Derived from the use of naval artillery what is the nautical term for the top edge of the side of a boat?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct reasoning that identified 'gunwale' as the nautical term derived from naval artillery use, with accurate etymological explanation.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct final answer matching the expected answer set.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#20",
+   "title": "Who is the paternal grandfather of Charles Andrew Bruce?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the need for genealogical expertise and delegated appropriately.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Search retrieved documents about Nish Bruce (Charles 'Nish' Bruce) that explicitly state Major Ewen Cameron Bruce was his paternal grandfather, but this is a misidentification\u2014the question asks about Charles Andrew Bruce, not Charles 'Nish' Bruce, and the expected answer is William Bruce, 8th Earl of Kincardine.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Expert confirmed the wrong answer (Major Ewen Cameron Bruce) based on the misleading documents retrieved in the prior cycle, propagating the initial retrieval error.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator output the wrong answer (Major Ewen Cameron Bruce instead of William Bruce, 8th Earl of Kincardine) by accepting the expert's incorrect response without verification.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#21",
+   "title": "Franz Liszt ended up the father-in-law to which other very famous composer?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Critical"
+     },
+     "reason": "The reasoning contains a fundamental factual error: Cosima was the daughter of Franz Liszt (not Hans von B\u00fclow), and she married Hans von B\u00fclow; therefore Liszt became father-in-law to B\u00fclow, not the other way around. The correct answer is Richard Wagner, who married Cosima Liszt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The final answer propagates the incorrect reasoning from coord_r1, providing Hans von B\u00fclow instead of the correct answer Richard Wagner.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#22",
+   "title": "Which Scottish league team play their home game at Victoria Park and have the nickname The Staggies'?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Expert Assignment"
+     },
+     "reason": "Coordinator assigned the wrong expert task; should have asked about Ross County and Victoria Park, not a generic search that led to Kilmarnock.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search returned irrelevant documents (Murrayfield, Kilmarnock at Rugby Park) instead of information about Victoria Park; first failed attempt to answer the question.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Identical search query repeated with no strategy change; still returns irrelevant documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of identical search query with no new strategy; pure waste of resources.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repetition of identical search query; continued wasteful cycling.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final search attempt still returns irrelevant documents; expert concludes Kilmarnock based on flawed retrieval, propagating the initial assignment error.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator accepted the wrong team (Kilmarnock) from expert and proceeded to verify its nickname instead of recognizing the fundamental error in the initial assignment.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for Kilmarnock nickname returns limited information; first attempt in a new cycle based on wrong premise.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Identical search repeated; still returns same limited documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of identical search query; pure waste.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repetition of identical search query; continued wasteful cycling.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final search attempt confirms Kilmarnock is called 'Killie', not 'The Staggies', but this is based on the wrong team premise from coord_r1.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r3",
+     "kind": "decision",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator correctly identifies the mismatch between Kilmarnock's nickname and 'The Staggies', but fails to recognize that the root error was assigning the wrong team initially; should have searched for Ross County.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Final answer incorrectly states no such team exists, when the correct answer is Ross County; coordinator failed to recover from the initial wrong team assignment and produced a false negative.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#23",
+   "title": "Where was the director of film Torchy Blane In Panama born?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator failed to identify the correct film; 'Torchy Blane in Panama' does not exist, and the coordinator's assumption about Frank Tuttle was never verified against retrieved documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search query returned irrelevant documents about Torch Computers, not the film; expert hallucinated 'Carl Dean Svozil' as answer despite no supporting evidence.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated with no strategy change; abandoned attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of identical search query; pure waste.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repetition of identical search query; pure waste.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fifth repetition of identical search query; final abandoned attempt before expert provided hallucinated answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly recognized the first answer was wrong and attempted to verify; showed appropriate skepticism.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search query returned irrelevant documents; expert hallucinated 'Jack Webster' as answer despite no supporting evidence.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated with no strategy change; abandoned attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of identical search query; pure waste.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repetition of identical search query; pure waste.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fifth repetition of identical search query; final abandoned attempt before expert provided hallucinated answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r3",
+     "kind": "decision",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator assumed Frank Tuttle directed 'Torchy Blane in Panama' without evidence and proceeded to search for his birthplace, conflating an unverified director with a non-existent film.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Frank Tuttle born' returned documents about Magruder Tuttle (a rear admiral), not Frank Tuttle the film director; expert misidentified the retrieved person.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search query changed but still returned documents about Magruder Tuttle and A. Theodore Tuttle, not Frank Tuttle the film director; expert continued to misidentify the wrong person.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Final search returned Magruder Tuttle's birthplace (Lenoir, North Carolina) and expert reported this as Frank Tuttle's birthplace; this wrong answer was used in the final output.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator propagated the wrong birthplace from the misidentified Tuttle; the answer is factually incorrect for the actual director of Torchy Blane.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#24",
+   "title": "where does the pulmonary trunk receive blood from?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator reasoning correctly identifies that the pulmonary trunk receives blood from the right ventricle, which matches the expected answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "The final answer states 'right ventricle of the heart' but the expected answer requires 'right ventricle' or 'the heart' as separate acceptable phrasings; the phrasing used does not match the expected answer format exactly, causing the outcome to be marked False despite factual correctness.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#25",
+   "title": "What is the name of the hotel on the Upper West Side of New York City that housed a gay bathhouse?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the question as requiring geographic and sociocultural historical knowledge and appropriately delegated to an expert.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "First search successfully retrieved the correct answer (Ansonia Hotel) in Doc 2, which explicitly states it housed the Continental Baths on the Upper West Side.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Redundant search with a slightly reformulated query despite having already found the correct answer in the previous cycle; the retrieved documents do not contain the needed information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third search with another reformulation of the same query; continues to retrieve irrelevant documents despite the answer already being established in cycle 0.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Final answer correctly states 'Ansonia Hotel', which matches the expected answer and was properly retrieved and identified in the first expert search cycle.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#26",
+   "title": "who wrote lord have mercy on the working man?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the question as requiring cultural/music expertise and delegated appropriately.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Search query returned irrelevant documents about Joe Hill's other songs and labor history, but expert incorrectly concluded Joe Hill wrote this song based on the retrieved context mentioning Joe Hill, without finding the actual target song.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated with no strategy change, returning the same irrelevant documents; abandoned attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated again with no strategy change, returning the same irrelevant documents; abandoned attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final search attempt returned the same irrelevant documents; expert reconfirmed the wrong answer (Joe Hill) based on misleading context that only mentioned Joe Hill's other work, not this specific song.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator propagated the expert's incorrect answer without catching the hallucination; the retrieved documents never actually mentioned 'Lord Have Mercy on the Working Man' being written by Joe Hill.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#27",
+   "title": "who opens the church of the holy sepulchre?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator framed the question as asking about Christian denominations managing the church, when the actual question asks who 'opens' it\u2014a specific ceremonial role held by the Nusaybah family (Sunni Muslims), not Christian churches.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search query returned irrelevant results (theme park, comics) instead of information about the actual Church of the Holy Sepulchre in Jerusalem; propagates the wrong framing from coord_r1.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search query again returned irrelevant results (musicians, gospel leaders) with no useful information about the Church of the Holy Sepulchre; continues failed search pattern.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query to cycle0 with identical irrelevant results; pure repetition without strategy change.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query to cycle1 with identical irrelevant results; pure repetition without strategy change.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query to cycle3 with identical irrelevant results; third+ repetition of same failed query.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator acknowledged the need for clarification but continued pursuing the wrong framing (Christian denominations) instead of recognizing the question asks about ceremonial opening by a Muslim family.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'full custodial arrangement' returned irrelevant results (music album, novel) instead of factual information about the Church of the Holy Sepulchre; propagates wrong framing.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query to cycle0 with identical irrelevant results; pure repetition.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query to cycle1 with identical irrelevant results; pure repetition.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query to cycle2 with identical irrelevant results; pure repetition.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query to cycle3 with identical irrelevant results; pure repetition.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle5",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query to cycle4 with identical irrelevant results; pure repetition.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle6",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query to cycle5 with identical irrelevant results; pure repetition.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle7",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query to cycle6 with identical irrelevant results; pure repetition.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle8",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical query to cycle7 with identical irrelevant results; pure repetition.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r3",
+     "kind": "decision",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator synthesized information about Christian denominations managing the church but failed to recognize or search for the actual answer about the Nusaybah family's ceremonial role in opening the church.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Final answer lists Christian denominations as those who open the church, completely missing the correct answer that the Nusaybah family (Sunni Muslims) holds the ceremonial keys and opens the church daily.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#28",
+   "title": "What is the capital of Louisiana?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified that the question requires a direct geographic fact lookup without need for expert consultation.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Final answer is correct and matches the expected answer format.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#29",
+   "title": "When did the first prime minister of the Russian Empire come into office?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Critical"
+     },
+     "reason": "The coordinator's reasoning is factually incorrect; the first Prime Minister of the Russian Empire was Sergei Witte, who took office on November 6, 1905, not Count Nikolai Repnin in 1801.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "The final answer of 1801 propagates the incorrect reasoning from coord_r1 and contradicts the expected answer of November 6, 1905.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#30",
+   "title": "Who moved the capitol from the city where the Yongle emperor greeted the person to whom the edict was addressed to Beijing?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator misframed the question by asking about 'the person to whom the edict was addressed' rather than recognizing the question asks who moved the capital after the Yongle Emperor's time, which should have led to identifying Yuan Shikai as the answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search query returned irrelevant documents (Jesuit missionary, Edict of Potsdam) that do not address the question about the Yongle Emperor's edict.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated with no strategy change, returning the same irrelevant documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of identical search query with no strategy adjustment, pure waste of resources.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator accepted the misframed premise and concluded the Yongle Emperor moved the capital, failing to recognize the question asks who moved it after the Yongle Emperor's era.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "Final answer incorrectly identifies the Yongle Emperor as the one who moved the capital to Beijing, when the question asks who moved it from the city where Yongle greeted someone\u2014the correct answer is Yuan Shikai.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#31",
+   "title": "Who is the maternal grandfather of Princess Christina Margarethe Of Hesse?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct task decomposition: identifying the mother first, then her father, is the right logical approach.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Search query returned irrelevant documents (USS Salem, Julia Alapai, Wilhelm Wilhelmsen) with no information about Princess Christina Margarethe of Hesse.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Identical search query repeated with no strategy change; retrieved same irrelevant documents about SMS Irene and USS Salem.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of identical query with no new strategy; pure waste of iteration.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repetition of identical query; continued waste without progress.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fifth repetition of identical query; abandoned attempt that did not contribute to final answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct decision to retry the same question after first expert call failed; reasonable escalation.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Search returned irrelevant documents (USS Salem, Julia Alapai, Wilhelm Wilhelmsen) with no information about Princess Christina Margarethe's mother.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Repeated search query returned same irrelevant documents; no new information retrieved.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Expert hallucinated the answer 'Princess Irene of Hesse and by Rhine' without any supporting evidence in the retrieved documents; this false identification became the foundation for the entire downstream failure.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r3",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Correct logical step: given the (incorrect) identification of the mother, asking for her father is the right next question.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Search retrieved documents mentioning Princess Irene as sister-in-law of Kaiser Wilhelm II, which misled the expert into confusing relationship; documents do not establish her father.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Retrieved documents mention Princess Irene christening a ship and her brother Ernest Louis, but do not identify her father; expert misinterpreted available information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Same irrelevant documents retrieved; no new information to support the father identification.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Repeated search with same irrelevant results; expert still unable to find actual father information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Expert hallucinated 'Kaiser Wilhelm II' as the father of Princess Irene based on misreading that she was sister-in-law of Kaiser Wilhelm II; this is factually wrong (her father was Prince Louis of Hesse and by Rhine) and directly caused the final incorrect answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator correctly assembled the (incorrect) information from expert into final answer; the error originated upstream in expert hallucinations, not in the coordinator's response process.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#32",
+   "title": "Who was the director of The Distance?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the question as film-related and delegated to an appropriate expert.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Search query returned irrelevant documents about mathematical/social distance concepts instead of the film, causing the expert to hallucinate an answer (Mark Levin) rather than retrieve the correct director (Larysa Kondracki).",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query repeated with no strategy change, returning the same irrelevant documents; abandoned attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repetition of identical search query with no strategy change; pure waste of resources.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final search attempt still returns irrelevant documents; expert provides hallucinated answer (Mark Levin) based on lack of useful retrieval, propagating the root retrieval failure.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator propagated the expert's hallucinated answer without correction; the wrong answer stems from the expert's failed retrieval and reasoning.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#33",
+   "title": "Who is Otto I, Prince Of Anhalt-Aschersleben's paternal grandfather?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the need to find paternal lineage and delegated appropriately.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search query returned irrelevant documents (Otto von Diederichs, ships, aircraft) unrelated to Otto I, Prince of Anhalt-Aschersleben; first abandoned attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search strategy with same irrelevant results; second abandoned attempt with no strategy change.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search query returning same irrelevant documents; third+ repetition of identical query.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Fourth repetition of identical search query with no new strategy; pure waste of search attempts.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final attempt in first expert's search loop; retrieved irrelevant documents but expert still provided answer 'Duke Ernest II of Saxe-Weimar' which is incorrect and contributed to initial wrong direction.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified inconsistency in first expert's answer and appropriately re-delegated to verify with another expert.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Expert correctly retrieved the Wikipedia article on Otto I, Prince of Anhalt-Aschersleben identifying his father as Henry II and maternal grandfather as Otto the Child; reasoning correctly identified need to find paternal grandfather.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Expert correctly identified from retrieved documents that Otto the Child was the maternal (not paternal) grandfather and appropriately searched for the paternal grandfather.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 reasoning"
+     },
+     "reason": "Expert retrieved correct document showing Henry the Lion was grandfather of Otto the Child, but failed to recognize that Otto the Child was Otto I's maternal grandfather, not paternal; expert confused maternal lineage with paternal lineage, leading to wrong final answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator accepted expert's answer 'Henry the Lion' without catching the fundamental error that this traces maternal lineage (Otto I \u2192 Matilda \u2192 Otto the Child \u2192 Henry the Lion) rather than paternal lineage (Otto I \u2192 Henry II \u2192 ?); the correct paternal grandfather is Henry I, Count of Anhalt.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#34",
+   "title": "In 1968, what telephone number was established as the national emergency number for the United States?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified this as a factual historical question about the 1968 U.S. emergency number and reasoned appropriately about the task.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error",
+      "critical_type": "Centralized Agent \u2014 Response Process"
+     },
+     "reason": "The answer '1-911' is incorrect; the expected answer is '911' (the number itself, not formatted with a country code prefix).",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#35",
+   "title": "In what country is Tina?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator misframed the task by asking for 'context of Tina' instead of directly searching for who Tina is; this led to irrelevant asteroid and hurricane results rather than identifying Tina Turner.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Tina' returned asteroid information, which was irrelevant to the actual question about a person named Tina; propagates the coordinator's wrong framing.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with similar query 'context of Tina in the question' returned same irrelevant results; abandoned approach.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third repeated search with identical query; wasteful repetition of the same failed approach.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator continued with wrong framing by asking 'Is Tina a person or fictional character?' instead of directly searching for 'Tina Turner' or 'famous Tina'; propagates the initial decomposition error.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Tina' returned software program and nucleic acid information, still missing the actual person; follows from coordinator's continued wrong framing.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Search for 'Tina character' returned unrelated technical results; abandoned approach.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated search with identical query 'Tina character'; wasteful repetition.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r3",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified Tina Turner and her country of origin (United States) despite the failed search trajectory; reasoning is sound given the context.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Final answer 'United States' is correct and matches the expected answer; the outcome is True.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#36",
+   "title": "Which film has the director died later, Marriage In Name Only or Mille Chilometri Al Minuto!?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the need to find directors of both films and their death dates.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Marriage in Name Only' returned irrelevant documents about marriage equality movement, not the film.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Identical search query repeated with same irrelevant results about marriage equality.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Third repetition of identical search query with same irrelevant results.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Expert hallucinated 'Frank Pierson' as director despite no relevant documents retrieved; this incorrect director identification is the root cause of the final failure.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly proceeded to find death date of the (incorrectly identified) director.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Frank Pierson die' returned irrelevant documents about Hendrik Pierson, not the film director.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'when did Frank Pierson die' returned irrelevant documents about Hendrik Pierson and legal cases.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Third search with same query returned same irrelevant results.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Expert hallucinated death date 'June 24, 2006' despite no relevant documents retrieved; propagates the initial director misidentification.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r3",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly proceeded to find the second film's director.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Mille Chilometri Al Minuto!' returned irrelevant documents about Italian units of measurement.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'who directed Mille Chilometri Al Minuto!' returned irrelevant documents about Michelangelo Sapiano and Dziga Vertov's general work, not this specific film.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Identical search query repeated with same irrelevant results.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Third repetition of identical search query with same irrelevant results.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Expert hallucinated 'Dziga Vertov' as director despite no relevant documents confirming this; this is an independent critical error separate from the first director misidentification.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r4",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly proceeded to find death date of the (incorrectly identified) second director.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci3_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Dziga Vertov die' returned irrelevant documents about chess games and insurance companies.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci3_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'Dziga Vertov die' repeated with same irrelevant results.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci3_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search for 'when did Dziga Vertov die' returned irrelevant documents about obesity and medical cases.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci3_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Identical search query repeated with same irrelevant results.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci3_cycle4",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Expert hallucinated death year '1954' despite no relevant documents retrieved; propagates the second director misidentification.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final answer correctly compared the two hallucinated death dates (1954 vs 2006) but is based entirely on two incorrect director identifications, making the answer wrong.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#37",
+   "title": "On what date did Battle of the birth place of Marzuki Alie end?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator failed to decompose the task correctly; should have recognized that 'Marzuki Alie's birthplace' likely refers to Palembang and searched for 'Battle of Palembang' rather than dismissing the query as non-existent.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator propagated the incorrect decomposition by concluding the battle does not exist, when the correct answer (15 February 1942) indicates it was the Battle of Palembang during WWII.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#38",
+   "title": "Which animal represents the deadly sin of envy?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly identified the need to verify symbolic associations and delegated appropriately to an expert.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "First search attempt with a reasonable query returned incomplete/truncated documents that did not directly answer the question.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Second search with a different query strategy still returned incomplete documents without clear symbolic associations.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third search repeated the first query exactly, retrieving identical incomplete documents; pure waste of a search attempt.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final search in this cycle repeated the same query again and returned the same incomplete documents, leading to an incorrect answer (dog) that contradicted the correct answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator correctly recognized the inconsistency in the expert's answer and appropriately re-delegated to verify the result.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "First search attempt with a modified query returned incomplete documents without direct symbolic associations.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Second search with a longer query still returned the same incomplete documents without clear answers.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third search repeated the same query, retrieving identical incomplete documents; pure repetition waste.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci1_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Final search repeated the same query again with identical incomplete results, but the expert inferred 'serpent' as the answer despite lack of clear supporting evidence in the retrieved documents.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r3",
+     "kind": "decision",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "Coordinator again correctly identified inconsistency and appropriately delegated to a different expert for verification.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "First search attempt returned completely irrelevant documents (jinx, military symbolism, etc.) unrelated to animal-sin associations.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Second search with modified query returned irrelevant documents (cat o' nine tails, dog days, Leviathan) that did not address the specific question.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Third search with a longer query returned completely irrelevant documents (IKA-Renault Torino, Sinbad dog, Cosmic Hunt) unrelated to the question.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci2_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Expert Agent \u2014 interaction"
+     },
+     "reason": "Final search repeated the same query and returned identical irrelevant documents, yet the expert inferred 'snake' as the answer without any supporting evidence from the retrieved documents, making this the root cause of the trajectory's reliance on unsupported reasoning.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Informational"
+     },
+     "reason": "The final answer 'snake' is correct and matches the expected answer, despite the flawed retrieval process that preceded it.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "subset_40_stratified.jsonl#39",
+   "title": "Who is the author of Solo?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "severity": "Critical",
+      "critical_type": "Centralized Agent \u2014 Task decomposition"
+     },
+     "reason": "Coordinator misframed the question as asking for the writer of the film 'Solo: A Star Wars Story' when the question actually asks for the author of the book 'Solo' by Robert Mason.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle0",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search query 'Solo: A Star Wars Story' returned irrelevant results about trilobites and carbonite, failing to retrieve information about the actual book or its author.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle1",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Search query 'author of the film Solo: A Star Wars Story' continues pursuing the wrong framing and returns irrelevant trilobite results.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle2",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Identical search query to cycle1 with no strategy change, returning the same irrelevant results.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "expert_ci0_cycle3",
+     "kind": "cycle",
+     "labels": {
+      "severity": "Warning"
+     },
+     "reason": "Repeated identical search query for the third time, pure waste with no new information retrieved.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "severity": "Error"
+     },
+     "reason": "Coordinator accepted and output 'Lawrence Kasdan' (a screenwriter) based on the wrong task framing, propagating the initial misunderstanding that the question was about a film rather than a book.",
+     "source": "llm"
+    }
+   ]
+  }
+ ]
+}
