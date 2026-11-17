@@ -1,0 +1,1701 @@
+{
+  "version": "v4",
+  "model": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "source_file": "analysis/batches/batch_30/batch.jsonl",
+  "created": "2026-09-28T13:57:04",
+  "seconds": 72.5,
+  "usage": {
+    "inputTokens": 388611,
+    "outputTokens": 46330
+  },
+  "traces": [
+    {
+      "traj_idx": 0,
+      "q_id": 970,
+      "question": "Which museum was established first, Museum Of Croatian Archaeological Monuments or Bayernhof Music Museum?",
+      "data_source": "2wikimultihopqa",
+      "is_correct": false,
+      "attempts": 2,
+      "problems": null,
+      "answer_assessment": "incorrect",
+      "root_cause": {
+        "step_keys": [
+          "coord_r2"
+        ],
+        "why": "In round 2, the orchestrator retries Expert 1 after it has already failed, without consulting other relevant experts. This Repeating coordination error prevents the orchestrator from finding the information needed to answer the question. The premature termination in the final answer follows directly from this earlier failure to explore alternatives."
+      },
+      "trace_reading": "The question asks which of two museums was established first: the Museum of Croatian Archaeological Monuments or the Bayernhof Music Museum. The orchestrator needs to find the founding dates of both. In round 1, it sends a sub-question to Expert 1 asking when the Museum of Croatian Archaeological Monuments was established, but Expert 1 fails. In round 2, it sends another sub-question to Expert 1 asking when the Bayernhof Music Museum was established, but Expert 1 fails again. The orchestrator then gives up and answers that it cannot determine the dates due to repeated errors.",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "Sub-question sent to Expert 1: When was the Museum of Croatian Archaeological Monuments established?",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The orchestrator correctly identifies that it needs to find the founding dates of both museums and sends a reasonable sub-question to Expert 1 (General Knowledge expert), which is a suitable choice for historical institutional information. The reasoning is sound and the sub-question is well-formed. The fact that Expert 1 fails is not the orchestrator's fault.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "coord_r1",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "Expert 1 replied: FAILED (Max iterations reached without producing an answer) [in round 1]; Sub-question sent to Expert 1: When was the Bayernhof Music Museum established? [in round 2]",
+          "hedge_quote": null,
+          "label": "Repeating coordination",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "After Expert 1 fails in round 1, the orchestrator sends another sub-question to the same expert in round 2 without trying alternative experts. Expert 1 is a general knowledge expert and is relevant to the task, but the orchestrator has evidence that this expert cannot answer the first question. The roster includes Expert 2 (Regional Geography and Local History), Expert 3 (Modern History and Politics), and Expert 7 (General Knowledge and Encyclopedic Reference) as alternatives that might have better coverage of museum history. Retrying the same expert without new information or a modified approach after it has failed is Repeating coordination.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Critical",
+          "step_key": "coord_r2",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": true,
+          "evidence": "Unable to determine the establishment dates of either museum due to repeated errors in retrieving information from the expert.",
+          "hedge_quote": null,
+          "label": "Premature termination",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The orchestrator concludes the task cannot be answered after only two failed attempts with a single expert. Reasonable options remain: Expert 2 (Regional Geography and Local History, which covers heritage and cultural sites), Expert 3 (Modern History and Politics), Expert 4 (Entertainment Industry, which might cover museums), Expert 5 (Political History), and Expert 7 (General Knowledge and Encyclopedic Reference) were never consulted. However, the root cause is the earlier Repeating coordination error in coord_r2, so this unit is Error rather than Critical.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Error",
+          "step_key": "final_answer",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        }
+      ]
+    },
+    {
+      "traj_idx": 1,
+      "q_id": 1109,
+      "question": "What was the founding date of the university in which Plotonium was discovered?",
+      "data_source": "bamboogle",
+      "is_correct": false,
+      "attempts": 3,
+      "problems": [
+        "final_answer: declares_no_answer is true, so the label must be Premature termination (rule 9)"
+      ],
+      "answer_assessment": "incorrect",
+      "root_cause": {
+        "step_keys": [
+          "coord_r1"
+        ],
+        "why": "The orchestrator forms an unsupported belief from its own knowledge that Plotonium is not a real element, hedging this belief but then acting on it to conclude the question's premise is false. This belief is contradicted by the gold answer (March 23, 1868), which demonstrates that Plotonium was discovered at a real university. This unsupported belief leads directly to premature termination in the final answer."
+      },
+      "trace_reading": "The question asks for the founding date of the university where Plotonium was discovered. The orchestrator, in round 1, reasons that Plotonium is not a known element and asks Expert 7 to verify this. Expert 7 confirms it is not real. In round 2, the orchestrator concludes the question's premise is false and stops. The final answer states Plotonium does not exist. However, the gold answer is \\\"March 23, 1868\\\", indicating that Plotonium was actually discovered at a real university with a real founding date, contradicting the orchestrator's conclusion.",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "contradicted_by": "March 23, 1868",
+          "declares_no_answer": false,
+          "evidence": "The orchestrator states from its own knowledge: \"Plotonium is not a known scientific element or discovery in established chemistry or physics. There is no recognized element named 'Plotonium' in the periodic table or in scientific literature.\"",
+          "hedge_quote": "However, Plotonium is not a known scientific element or discovery in established chemistry or physics.",
+          "label": "Unsupported belief",
+          "other_proposal": null,
+          "own_fact_quote": "Plotonium is not a known scientific element or discovery in established chemistry or physics. There is no recognized element named \"Plotonium\" in the periodic table or in scientific literature.",
+          "reason": "The orchestrator states a fact from its own knowledge (that Plotonium is not a real element) with hedging language (\"However\", \"appears to be\"), and this fact is contradicted by the gold answer which provides a real founding date of March 23, 1868. Rule 3(a) and 3(b) apply: the fact is both hedged and contradicted by the gold answer. The orchestrator acts on this unsupported belief to plan its next action.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Critical",
+          "step_key": "coord_r1",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator reasons: \"'Plotonium' is not a real scientific element. It does not appear in the periodic table or in any credible scientific literature.\"",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "This unit only carries forward the unsupported belief from coord_r1 without introducing a new fault. The reasoning is consistent with the earlier conclusion, but the fault originates in coord_r1. Per rule 2, a later unit that only carries forward an earlier fault is labeled Informational.",
+          "repeats_fault_from": "coord_r1",
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "coord_r2",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": true,
+          "evidence": "The final answer states: \"Plotonium is not a real scientific element, so there is no university associated with its discovery.\"",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "This unit only carries forward the unsupported belief from coord_r1 without introducing a new fault. The reasoning is consistent with the earlier conclusion, but the fault originates in coord_r1. Per rule 2, a later unit that only carries forward an earlier fault is labeled Informational.",
+          "repeats_fault_from": "coord_r1",
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "final_answer",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        }
+      ]
+    },
+    {
+      "traj_idx": 2,
+      "q_id": 2048,
+      "question": "What organization affiliated with the National Collegiate Athletic Association Division were the 2012 Hawaii Warriors football team first year members of?",
+      "data_source": "hotpotqa",
+      "is_correct": false,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks what organization affiliated with NCAA Division the 2012 Hawaii Warriors football team were first-year members of. The orchestrator reasons that it needs to verify the divisional structure and Hawaii's affiliation, then asks Expert 1 about the NCAA division and conference for Hawaii football in 2012. Expert 1 replies \"Mountain West Conference.\" The orchestrator then concludes the answer is \"NCAA Division I\" based on the reasoning that the Mountain West Conference is part of Division I. However, the gold answer is \"Mountain West Conference,\" not \"NCAA Division I\"—the question asks for the organization (the conference), not the division level.",
+      "answer_assessment": "incorrect",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Goal misunderstanding",
+          "subtype": null,
+          "severity": "Critical",
+          "hedge_quote": null,
+          "own_fact_quote": "The NCAA has three divisions: Division I, Division II, and Division III. The University of Hawaii has historically been part of NCAA Division I.",
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator reasons about 'the specific NCAA division' and 'divisional structure' when the question explicitly asks for 'what organization affiliated with the National Collegiate Athletic Association Division'—the organization is the conference, not the division level.",
+          "reason": "The orchestrator misunderstands what the question asks. The question asks for the organization (the conference) that the team were first-year members of, not the NCAA division level. The orchestrator frames the task as finding the division (Division I, II, or III) rather than the conference organization. This is a Goal misunderstanding per rule 6: the reasoning states the wrong target.",
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "coord_r2",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "hedge_quote": null,
+          "own_fact_quote": "The Mountain West Conference is part of NCAA Division I.",
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": "coord_r1",
+          "declares_no_answer": false,
+          "evidence": "The orchestrator receives 'Mountain West Conference' from Expert 1 and reasons that this conference is part of Division I, then concludes the answer is Division I.",
+          "reason": "This round carries forward the Goal misunderstanding from coord_r1 without introducing a new fault. The orchestrator has the correct information (Mountain West Conference) but applies it to the wrong target (the division rather than the conference). Per rule 2, a later unit that only carries forward an earlier fault is Informational.",
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Premature termination",
+          "subtype": null,
+          "severity": "Error",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator answers 'NCAA Division I' when the expert reply was 'Mountain West Conference' and the question asks for the organization affiliated with NCAA Division.",
+          "reason": "The final answer is wrong because the orchestrator misunderstood the question's target (Goal misunderstanding in coord_r1). However, the orchestrator did not state that the task cannot be answered or that no answer exists; it simply gave the wrong answer based on the misunderstanding. Per rule 9, Verification failure does not apply (no stated doubt here). The root cause is the Goal misunderstanding in coord_r1, so this unit is Error, not Critical.",
+          "second_label": null,
+          "other_proposal": null
+        }
+      ],
+      "root_cause": {
+        "step_keys": [
+          "coord_r1"
+        ],
+        "why": "The orchestrator misunderstood the question as asking for the NCAA division level (Division I, II, or III) rather than the organization/conference that the team were first-year members of. This Goal misunderstanding led to the wrong final answer of 'NCAA Division I' instead of the correct 'Mountain West Conference.'"
+      }
+    },
+    {
+      "traj_idx": 3,
+      "q_id": 2526,
+      "question": "By 1931, what percentage of the world's Jews were the group of Jews that represented the bulk of modern Jewry?",
+      "data_source": "musique",
+      "is_correct": false,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks what percentage of the world's Jews by 1931 represented the bulk of modern Jewry. The orchestrator reasons that this refers to Eastern European Jews and sends a sub-question to Expert 1 asking \"What percentage of the world's Jews in 1931 were from Eastern Europe?\" Expert 1 replies \"90%\". The orchestrator then returns 90% as the final answer. The gold answer is 92 percent, so the final answer is incorrect by 2 percentage points.",
+      "answer_assessment": "incorrect",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "hedge_quote": null,
+          "own_fact_quote": "Modern Jewry is generally associated with the Jewish communities in Europe, especially in Eastern Europe, which were the largest and most influential in terms of population and cultural development.",
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator reasons that modern Jewry is associated with Eastern European Jews and sends a sub-question to Expert 1 asking for the percentage of world's Jews from Eastern Europe in 1931.",
+          "reason": "The orchestrator's reasoning about what 'bulk of modern Jewry' means (Eastern European Jews) is not contradicted by the trace or gold answer. The sub-question is appropriately targeted to Expert 1, a general knowledge expert suitable for historical demographic data. The orchestrator accepts the expert's responsive answer without stated doubt. Rule 4 applies: a suitable expert returns a responsive answer and nothing in the trace conflicts with it, so accepting it is Informational.",
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator returns 90% as the final answer, which is the answer provided by Expert 1.",
+          "reason": "The final answer directly reports the expert's reply without stated doubt or disagreement. The orchestrator did not state doubt about the expert answer, did not declare the task unanswerable, and did not make an unsupported claim from its own knowledge. The answer is incorrect (gold is 92%), but the error lies with the expert's response, not with the orchestrator's handling of it. Rule 4 applies: accepting a responsive expert answer without check is Informational even if the answer is wrong.",
+          "second_label": null,
+          "other_proposal": null
+        }
+      ],
+      "root_cause": {
+        "step_keys": [],
+        "why": "No orchestrator error is present. The expert provided a plausible, responsive answer (90%) that the orchestrator correctly accepted. The discrepancy between the final answer (90%) and the gold answer (92%) is due to the expert's response being slightly inaccurate, not due to an orchestrator fault in reasoning, delegation, or verification."
+      }
+    },
+    {
+      "traj_idx": 4,
+      "q_id": 3366,
+      "question": "when did linkin park release one more light?",
+      "data_source": "nq",
+      "is_correct": false,
+      "attempts": 2,
+      "problems": null,
+      "answer_assessment": "incorrect",
+      "root_cause": {
+        "step_keys": [
+          "final_answer"
+        ],
+        "why": "The orchestrator accepted Expert 0's incorrect answer (October 3, 2017) without verification. While the expert selection and initial question were sound, the final answer rests on trusting a single expert's factually wrong response when verification options were available."
+      },
+      "trace_reading": "The question asks for the release date of \"One More Light\" by Linkin Park. The orchestrator correctly identifies this as a music-related question and sends it to Expert 0 (Sports and Music Culture), which is appropriate. Expert 0 returns \"October 3, 2017\". The orchestrator accepts this answer and returns it as the final answer. However, the gold answer is May 19, 2017, indicating the expert provided incorrect information. The orchestrator did not verify or question the expert's response.",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator correctly identifies the question as music-related and sends it to Expert 0, which specializes in music culture, artists, genres, albums, and song releases.",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The orchestrator's reasoning is sound: it correctly understands the question asks for a release date, correctly identifies the domain as music culture, and selects an appropriate expert from the roster. The expert's response is responsive and well-formed. By rule 4, accepting a suitable expert's answer without a check is Informational, even though the answer is wrong. The expert is at fault, not the orchestrator at this stage.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "coord_r1",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": "May 19, 2017",
+          "declares_no_answer": false,
+          "evidence": "The orchestrator returns 'October 3, 2017' from Expert 0 without any verification, despite this being a factual claim that could be checked. The gold answer is May 19, 2017.",
+          "hedge_quote": null,
+          "label": "Information loss",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The orchestrator receives an expert answer and accepts it without stating doubt or disagreement (so not Verification failure by rule 5). However, the answer is factually wrong according to the gold answer. The orchestrator trusts the expert's response without any verification despite having the option to consult other general-knowledge experts (Experts 1 or 7) who might have caught the error. This is over-acceptance of evidence that turns out to be incorrect. By rule S2 and S3, since the answer is incorrect and this is the only error unit, it is Critical.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Critical",
+          "step_key": "final_answer",
+          "subtype": "over-acceptance",
+          "unchecked_doubt_quote": null
+        }
+      ]
+    },
+    {
+      "traj_idx": 5,
+      "q_id": 4823,
+      "question": "Who was the producer of The Sweet Sins of Sexy Susan?",
+      "data_source": "popqa",
+      "is_correct": false,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks for the producer of \"The Sweet Sins of Sexy Susan,\" a film. The orchestrator correctly identifies this as a film/entertainment question and sends it to Expert 4 (Film, Television, and the Entertainment Industry) in round 1. Expert 4 returns \"Kurt Nachmann\" as the producer. The orchestrator accepts this answer and returns it as the final answer. However, the gold answer is \"Franz Antel,\" not \"Kurt Nachmann,\" so the final answer is incorrect. The expert provided a wrong answer, which the orchestrator accepted without verification.",
+      "answer_assessment": "incorrect",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Informational",
+          "subtype": null,
+          "evidence": "The question asks about the producer of a specific work titled \"The Sweet Sins of Sexy Susan.\" This appears to be a film or media production, which falls under the domain of film, television, and the entertainment industry.",
+          "reason": "The orchestrator correctly identifies the question as concerning film/entertainment production and selects Expert 4 (Film, Television, and the Entertainment Industry), which is the appropriate expert for this domain. The sub-question is well-formed and directly addresses the query. Rule 4 applies: a suitable expert returns a responsive, well-formed answer, and nothing in the trace conflicts with it at this point, so accepting it is valid orchestrator behavior.",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null,
+          "severity": "Informational"
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Informational",
+          "subtype": null,
+          "evidence": "Kurt Nachmann",
+          "reason": "The orchestrator returns the answer provided by Expert 4 without stating doubt or disagreement. Rule 4 applies: the expert returned a responsive, well-formed answer to a suitable query, and the orchestrator accepted it. The answer is wrong (gold answer is Franz Antel), but the error lies with the expert, not the orchestrator's decision-making. The orchestrator made no new fault in the final answer unit itself.",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null,
+          "severity": "Informational"
+        }
+      ],
+      "root_cause": {
+        "step_keys": [],
+        "why": "The final answer is incorrect, but no orchestrator error is present. The orchestrator correctly delegated to an appropriate expert (Expert 4 for film/entertainment production), and the expert provided a plausible but wrong answer. The fault lies with the expert, not the orchestrator's reasoning or decision-making."
+      }
+    },
+    {
+      "traj_idx": 6,
+      "q_id": 4917,
+      "question": "What is The Valley the capital of?",
+      "data_source": "popqa",
+      "is_correct": false,
+      "attempts": 2,
+      "problems": null,
+      "answer_assessment": "incorrect",
+      "root_cause": {
+        "step_keys": [
+          "coord_r1"
+        ],
+        "why": "The orchestrator misunderstood the question's structure in round 1, reversing the relation from 'What is The Valley the capital of?' to 'What is the capital of The Valley?'. This fundamental misreading led to a sub-question that elicited an answer about Sacramento (a capital within a valley region) rather than the correct answer (Anguilla, of which The Valley is the capital)."
+      },
+      "trace_reading": "The question asks what \"The Valley\" is the capital of. The gold answer is Anguilla, a Caribbean island nation. The orchestrator in round 1 reasons that \"The Valley\" is not a widely recognized capital city and may refer to Silicon Valley in California. It then sends a sub-question to Expert 1 (General Knowledge) asking \"What is the capital of the region known as 'The Valley'?\" Expert 1 replies \"Sacramento\", which the orchestrator accepts as the final answer. The trace ends with an incorrect answer: Sacramento is not the capital of Anguilla; The Valley is the capital of Anguilla.",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "contradicted_by": "Anguilla | ai | 🇦🇮",
+          "declares_no_answer": false,
+          "evidence": "The orchestrator reasons that 'The Valley' refers to Silicon Valley in California and asks 'What is the capital of the region known as \"The Valley\"?' This misinterprets the question, which asks what The Valley is the capital OF, not what the capital of The Valley is.",
+          "hedge_quote": null,
+          "label": "Goal misunderstanding",
+          "other_proposal": null,
+          "own_fact_quote": "The Valley is not a widely recognized name for a capital city. It is more commonly known as a region in California, particularly associated with the Silicon Valley area.",
+          "reason": "The orchestrator misunderstands the question's structure. The question asks 'What is The Valley the capital of?' (i.e., what entity has The Valley as its capital), but the orchestrator interprets it as asking 'What is the capital of The Valley?' (i.e., what is the capital within The Valley). This is a reversed relation and a fundamental misreading of the question's intent. Rule 6 applies: the reasoning states the wrong target of what the question asks.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Critical",
+          "step_key": "coord_r1",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator returns 'Sacramento' as the final answer, which follows from the expert's reply to the misframed sub-question.",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The final answer carries forward the fault from coord_r1 without introducing a new error. The orchestrator accepted the expert's responsive answer to its (misframed) sub-question. Rule 2 applies: a later unit that only carries forward an earlier fault is Informational.",
+          "repeats_fault_from": "coord_r1",
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "final_answer",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        }
+      ]
+    },
+    {
+      "traj_idx": 7,
+      "q_id": 5326,
+      "question": "Which opera by Borodin features the Polovtsian Dances?",
+      "data_source": "triviaqa",
+      "is_correct": false,
+      "attempts": 3,
+      "problems": null,
+      "answer_assessment": "incorrect",
+      "root_cause": {
+        "step_keys": [
+          "coord_r2"
+        ],
+        "why": "The orchestrator stated doubt about the expert reply ('this contradicts established historical knowledge') but did not verify the doubt by calling another expert or asking a follow-up question. Instead, it replaced the expert answer with an unsupported belief from its own knowledge, leading to the wrong conclusion that no opera by Borodin features the Polovtsian Dances. This Verification failure (missed verification) is the root cause of the incorrect final answer."
+      },
+      "trace_reading": "The question asks which opera by Borodin features the Polovtsian Dances. The gold answer is \"Prince Igor,\" composed by Borodin. In round 1, the orchestrator reasons that \"Prince Igor\" is likely correct but decides to verify with an expert, sending a sub-question to Expert 1 (General Knowledge). Expert 1 replies \"Alexander Borodin,\" confirming Borodin as the composer. However, in round 2, the orchestrator contradicts this expert reply, stating that the Polovtsian Dances are actually from Rimsky-Korsakov's version and that Borodin did not complete the opera. The orchestrator then concludes \"None\" — that no opera by Borodin features the dances — which contradicts both the expert reply and the gold answer. The trace ends with an incorrect final answer.",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator states a hedged belief about Prince Igor and Borodin, then appropriately sends a sub-question to Expert 1 to verify.",
+          "hedge_quote": "However, I need to verify if Borodin actually composed \"Prince Igor\" and whether the Polovtsian Dances are part of that work.",
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": "The Polovtsian Dances are a famous set of musical pieces that are traditionally associated with the opera \"Prince Igor,\" composed by Alexander Borodin.",
+          "reason": "The orchestrator expresses uncertainty about whether Borodin composed Prince Igor and whether it contains the Polovtsian Dances. It then sends a neutral, appropriate sub-question to a general-knowledge expert to verify. This is a sound coordination step: the reasoning is tentative, and the expert call is justified. Rule 3b applies: the hedge is stated, but the orchestrator does not act on the belief without checking—it delegates to an expert.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "coord_r1",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": "Alexander Borodin",
+          "declares_no_answer": false,
+          "evidence": "The orchestrator states: \"The information provided indicates that Alexander Borodin composed the Polovtsian Dances. However, this contradicts established historical knowledge.\" It then rejects the expert answer and substitutes its own belief without calling another expert to verify.",
+          "hedge_quote": null,
+          "label": "Verification failure",
+          "other_proposal": null,
+          "own_fact_quote": "The Polovtsian Dances are actually from the opera *Prince Igor*, which was composed by Nikolai Rimsky-Korsakov. Borodin was a collaborator on the early stages of *Prince Igor*, but he did not complete it. The dances were composed by Rimsky-Korsakov and are a famous part of the opera.",
+          "reason": "The orchestrator explicitly states doubt about the expert reply ('this contradicts established historical knowledge') and then proceeds without verification. It replaces the expert answer with its own belief from 'established historical knowledge' (an unsupported claim from the orchestrator's own knowledge) without sending a follow-up question to another expert or asking the same expert for clarification. Rule 5 applies: stated disagreement with an expert answer, followed by no check, is Verification failure (missed verification subtype). This is the critical fault that leads to the wrong final answer.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Critical",
+          "step_key": "coord_r2",
+          "subtype": "missed verification",
+          "unchecked_doubt_quote": "The information provided indicates that Alexander Borodin composed the Polovtsian Dances. However, this contradicts established historical knowledge."
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": true,
+          "evidence": "The orchestrator answers: \"None\" — concluding that no opera by Borodin features the Polovtsian Dances.",
+          "hedge_quote": null,
+          "label": "Premature termination",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The orchestrator concludes that the task cannot be answered (the premise is false: no such opera exists) and stops. This conclusion follows from the Verification failure in coord_r2. Rule 9 applies: Premature termination takes precedence on final_answer when the orchestrator declares the task unanswerable. The wrong conclusion is a direct consequence of the unverified doubt in coord_r2.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Error",
+          "step_key": "final_answer",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        }
+      ]
+    },
+    {
+      "traj_idx": 8,
+      "q_id": 755,
+      "question": "Where was the place of death of the director of film The River Wild?",
+      "data_source": "2wikimultihopqa",
+      "is_correct": false,
+      "attempts": 2,
+      "problems": null,
+      "answer_assessment": "incorrect",
+      "root_cause": {
+        "step_keys": [],
+        "why": "No orchestrator error caused the wrong answer. Expert 7 provided a plausible but incorrect response ('Toronto' instead of Los Angeles, California). The orchestrator correctly identified the task structure, selected appropriate experts, and accepted a responsive expert answer without stated doubt. By rule S2, when no unit has an error label, no unit is Critical."
+      },
+      "trace_reading": "The question asks for the place of death of the director of \"The River Wild.\" The orchestrator correctly identifies that it needs to first find the director's name, then find where that director died. In round 1, it asks Expert 4 (Film, Television, and Entertainment Industry) who directed the film, and receives the answer \"Curtis Hanson.\" In round 2, it asks Expert 7 (General Knowledge and Encyclopedic Reference) where Curtis Hanson died, and receives the answer \"Toronto.\" The orchestrator returns \"Toronto\" as the final answer. However, the gold answers indicate the correct answer is Los Angeles, California (or equivalent), not Toronto. This suggests Expert 7 provided incorrect information, or the orchestrator accepted a wrong answer without verification.",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator reasons: 'To answer this, I first need to identify who directed The River Wild.' It sends a well-formed sub-question to Expert 4, which is the appropriate expert for film-related information.",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The orchestrator correctly understands the task structure (find director, then find death place), formulates an appropriate first sub-question, and selects a suitable expert (Expert 4 specializes in Film, Television, and Entertainment Industry). The reasoning and delegation are sound given what was known at that point.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "coord_r1",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator receives 'Curtis Hanson' from Expert 4 and reasons: 'Now, I need to find the place of death of Curtis Hanson.' It sends a direct, well-formed sub-question to Expert 7 (General Knowledge and Encyclopedic Reference), which is suitable for biographical information.",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The orchestrator correctly uses the information from round 1, formulates an appropriate follow-up sub-question, and selects a suitable expert. Expert 7 is appropriate for biographical and encyclopedic reference material. The orchestrator accepts the expert's responsive answer without stated doubt. By rule 4, accepting a suitable expert's responsive answer without conflict is Informational, even if the answer is wrong.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "coord_r2",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator returns 'Toronto' as the final answer, which matches what Expert 7 provided.",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The final answer is incorrect (gold answer is Los Angeles, California), but the orchestrator's error is not in its reasoning or coordination—it is in accepting an expert's answer that turned out to be wrong. The orchestrator did not state doubt about the expert's reply, did not make an unsupported belief from its own knowledge, and did not mishandle the information. The fault lies with Expert 7 providing incorrect information. By rule 4, accepting a suitable expert's responsive answer without conflict is Informational, even if the answer is wrong.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "final_answer",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        }
+      ]
+    },
+    {
+      "traj_idx": 9,
+      "q_id": 1099,
+      "question": "In what year was the tallest lattice tower completed?",
+      "data_source": "bamboogle",
+      "is_correct": false,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks for the year when the tallest lattice tower was completed. The orchestrator sends a direct sub-question to Expert 1 (General Knowledge), which is a reasonable choice for factual questions about engineering records. Expert 1 replies \"June 27, 2018\". The orchestrator accepts this answer and returns 2018 as the final answer. However, the gold answer is 2012, indicating the expert provided incorrect information about which tower is the tallest or when it was completed.",
+      "answer_assessment": "incorrect",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Informational",
+          "subtype": null,
+          "evidence": "The orchestrator sends a direct, well-formed sub-question to Expert 1 (General Knowledge), which is a suitable expert for factual questions about engineering records and infrastructure milestones.",
+          "reason": "The orchestrator's reasoning is sound: it correctly understands the question as asking for a specific factual year, selects a reasonable expert from the roster (Expert 1 is listed as covering 'broad, encyclopedia-style knowledge spanning arts and culture, sports and competitions, military and political history, and major science/technology and public-policy topics'), and formulates a clear, direct sub-question. The expert's reply is responsive and well-formed. By rule 4, accepting a suitable expert's responsive answer without a check is Informational, even if the answer is wrong. The fault lies with the expert, not the orchestrator's coordination.",
+          "severity": "Informational",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Informational",
+          "subtype": null,
+          "evidence": "The orchestrator returns '2018' based on Expert 1's reply of 'June 27, 2018'.",
+          "reason": "The orchestrator accepts the expert's answer without stating doubt or disagreement. By rule 4, accepting a responsive expert answer is Informational. The final answer is incorrect because the expert provided wrong information (the gold answer is 2012), but this is not an orchestrator error. The orchestrator did not state doubt, did not hedge, and did not have information contradicting the expert reply at the time of answering. Rule 9 does not apply: there is no stated doubt (no Verification failure), and the orchestrator is not declaring the task unanswerable (no Premature termination).",
+          "severity": "Informational",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null
+        }
+      ],
+      "root_cause": {
+        "step_keys": [],
+        "why": "The final answer is incorrect, but no orchestrator error is present. The expert provided a plausible, responsive answer (a specific date in the correct format) that the orchestrator reasonably accepted. By rule 4, accepting a suitable expert's responsive answer without a check is not an orchestrator fault, even if the answer is wrong. The fault lies with the expert, not the orchestrator's coordination."
+      }
+    },
+    {
+      "traj_idx": 10,
+      "q_id": 1203,
+      "question": "Kam Heskin plays Paige Morgan in a 2004 film directed by who?",
+      "data_source": "hotpotqa",
+      "is_correct": false,
+      "attempts": 2,
+      "problems": null,
+      "answer_assessment": "incorrect",
+      "root_cause": {
+        "step_keys": [],
+        "why": "No orchestrator error caused the wrong answer. Expert 4 provided an incorrect answer ('Mark Amin' instead of 'Martha Coolidge'), and the orchestrator correctly accepted this plausible expert reply without verification, which is valid by rule 4. The fault lies with the expert, not the orchestrator."
+      },
+      "trace_reading": "The question asks for the director of a 2004 film in which Kam Heskin plays Paige Morgan. The orchestrator sends a direct sub-question to Expert 4 (Film, Television, and the Entertainment Industry), asking who directed the film. Expert 4 replies \"Mark Amin\". The orchestrator accepts this answer and returns it as the final answer. However, the gold answer is \"Martha Coolidge\", so the final answer is incorrect.",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator correctly identifies the need to find the film and its director, and sends a well-formed sub-question to Expert 4, which is the appropriate expert for film information.",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The orchestrator's reasoning is sound: it correctly understands the task (find the director of a 2004 film where Kam Heskin plays Paige Morgan), and it selects an appropriate expert (Expert 4 covers film and entertainment). The sub-question is well-formed and directly targets the needed information. The expert's reply is responsive and well-formed. By rule 4, accepting a suitable expert's answer without a check is Informational, even though the answer turns out to be wrong.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "coord_r1",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator returns the answer provided by Expert 4: 'Mark Amin'.",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The final answer simply reports what Expert 4 returned. The orchestrator did not state doubt about the expert's answer, did not make an unsupported claim from its own knowledge, and did not declare the task unanswerable. The fault lies with Expert 4 providing incorrect information, not with the orchestrator's handling of it. By rule 2, a later unit that only carries forward an earlier fault without a new fault of its own is Informational.",
+          "repeats_fault_from": "coord_r1",
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "final_answer",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        }
+      ]
+    },
+    {
+      "traj_idx": 11,
+      "q_id": 2553,
+      "question": "In the movie A League of their Own, who played the husband of the person who also played Thelma in the movie Thelma and Louise?",
+      "data_source": "musique",
+      "is_correct": false,
+      "attempts": 2,
+      "problems": null,
+      "answer_assessment": "incorrect",
+      "root_cause": {
+        "step_keys": [
+          "coord_r1"
+        ],
+        "why": "The orchestrator's unsupported belief in coord_r1 that Geena Davis did not appear in *A League of Their Own* is the root cause. This false belief led to the incorrect conclusion that the question contains a factual error, which was carried through to the final answer. Had the orchestrator verified this belief by consulting an expert (particularly an entertainment expert), it would have learned that Geena Davis did appear in the film and could have identified Bill Pullman as the correct answer."
+      },
+      "trace_reading": "The question asks who played the husband of the person who played Thelma in *Thelma and Louise* in the movie *A League of Their Own*. The orchestrator correctly identifies that it needs to find who played Thelma in *Thelma and Louise*, then find if that person appeared in *A League of Their Own* and who played their husband. In round 1, it asks Expert 1 who played Thelma; Expert 1 incorrectly replies \"Diane Kruger\" (the correct answer is Geena Davis). In round 2, the orchestrator states it knows the correct answer is Geena Davis, rejects the expert's reply, and asks a different question about who played a husband in *A League of Their Own*; Expert 1 replies \"Kevin Costner\". In round 3, the orchestrator concludes there is no such connection and gives up. The gold answer is \"Bill Pullman\", meaning the question is valid: Geena Davis played Thelma in *Thelma and Louise*, appeared in *A League of Their Own*, and Bill Pullman played her husband in that film. The orchestrator's final answer is incorrect.",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "contradicted_by": "Bill Pullman",
+          "declares_no_answer": false,
+          "evidence": "The orchestrator states from its own knowledge that 'A League of Their Own does not feature a character who is the husband of someone who played Thelma in Thelma and Louise' and that 'Geena Davis did not appear in A League of Their Own', acting on this belief to conclude the question is based on error.",
+          "hedge_quote": null,
+          "label": "Unsupported belief",
+          "other_proposal": null,
+          "own_fact_quote": "The film *A League of Their Own* centers on female baseball players and does not include a character married to Geena Davis's character.",
+          "reason": "The orchestrator states a fact from its own knowledge (that Geena Davis did not appear in *A League of Their Own* and no such husband character exists) without calling an expert to verify, and acts on this belief to shape its subsequent reasoning and sub-questions. This fact is contradicted by the gold answer Bill Pullman, which confirms such a character exists. Rule 3(a) applies: the fact is contradicted by the gold answer. This is the root cause of the wrong final answer.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Critical",
+          "step_key": "coord_r1",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator states 'The information provided indicates that Diane Kruger played Thelma in Thelma and Louise, which is incorrect' and then proceeds without checking this disagreement with the expert, instead asserting its own belief that 'Geena Davis played Thelma in Thelma and Louise'.",
+          "hedge_quote": null,
+          "label": "Verification failure",
+          "other_proposal": null,
+          "own_fact_quote": "The correct actor who played Thelma in *Thelma and Louise* is Geena Davis.",
+          "reason": "The orchestrator explicitly states doubt about the expert's answer ('which is incorrect') but does not verify this disagreement by calling another expert or asking a neutral follow-up question. Instead, it replaces the expert answer with its own unsupported belief. Rule 5 applies: stated doubt without a check is Verification failure. The subtype is missed verification because the orchestrator should have verified its correction before proceeding.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Error",
+          "step_key": "coord_r2",
+          "subtype": "missed verification",
+          "unchecked_doubt_quote": "The information provided indicates that Diane Kruger played Thelma in *Thelma and Louise*, which is incorrect."
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator reasons 'Since Geena Davis did not appear in A League of Their Own, and no such marital connection exists between the characters, the question contains a factual or logical error.'",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "This round carries forward the unsupported belief from coord_r1 (that Geena Davis did not appear in *A League of Their Own*) without introducing a new fault. The reasoning is consistent with the earlier error but does not add a new orchestrator fault. Rule 2 applies: a later unit that only carries forward an earlier fault is Informational.",
+          "repeats_fault_from": "coord_r1",
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "coord_r3",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": true,
+          "evidence": "The final answer states 'There is no such character or connection in the films; the question contains a factual or logical error.'",
+          "hedge_quote": null,
+          "label": "Premature termination",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The orchestrator concludes the task cannot be answered and stops, declaring the question contains a factual error. However, reasonable options remained: the orchestrator could have consulted Expert 4 (Film, Television, and Entertainment Industry) or Expert 6 (Popular Entertainment, Narrative Fiction, and Media Culture) to verify the cast of *A League of Their Own*, or asked a more direct question about whether Geena Davis appeared in the film. Rule 9.2 applies: the final answer declares the task unanswerable while options remained. This is a new fault (Premature termination) on the final_answer unit, separate from the earlier Unsupported belief in coord_r1.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Error",
+          "step_key": "final_answer",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        }
+      ]
+    },
+    {
+      "traj_idx": 12,
+      "q_id": 3674,
+      "question": "what kind of dog is nana in snow dogs?",
+      "data_source": "nq",
+      "is_correct": false,
+      "attempts": 2,
+      "problems": null,
+      "answer_assessment": "incorrect",
+      "root_cause": {
+        "step_keys": [],
+        "why": "The final answer is incorrect, but no orchestrator error caused it. The orchestrator made a sound coordination decision (appropriate expert selection and acceptance of a responsive answer from a suitable expert). The fault is with the expert's factual error, not the orchestrator's reasoning or delegation."
+      },
+      "trace_reading": "The question asks for the breed of the dog named Nana in the movie \"Snow Dogs.\" The orchestrator reasons that this is a question about a character in a film and sends it to Expert 6 (Popular Entertainment, Narrative Fiction, and Media Culture), which is a reasonable choice for film-related questions. Expert 6 replies \"Labrador Retriever.\" The orchestrator accepts this answer and returns it as the final answer. However, the gold answer is \"Border Collie,\" so the final answer is incorrect.",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator reasons that the question concerns a character in a film and selects Expert 6, who specializes in popular entertainment and narrative fiction, which is appropriate for this type of question.",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The orchestrator's reasoning is sound and the expert selection is appropriate given the roster. Expert 6 specializes in film and character details, making it a suitable choice for a question about a dog character in a movie. The orchestrator receives a responsive, well-formed answer from a suitable expert. By rule 4, accepting an expert answer without a check is Informational when the expert is suitable and the answer is responsive, even though the answer turns out to be wrong. The fault lies with the expert, not the orchestrator's coordination.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "coord_r1",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator returns 'Labrador Retriever' as the final answer, which matches the expert's reply.",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The final answer unit simply reports the expert's answer without stating doubt or declaring the task unanswerable. The orchestrator does not make a new error here; it carries forward the expert's incorrect answer. By rule 2, a later unit that only carries forward an earlier fault is Informational. The expert provided a plausible, responsive answer to a suitable question, so the orchestrator's acceptance was reasonable at the time.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "final_answer",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        }
+      ]
+    },
+    {
+      "traj_idx": 13,
+      "q_id": 4970,
+      "question": "In what city was Martyn Liadov born?",
+      "data_source": "popqa",
+      "is_correct": false,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks for the city where Martyn Liadov was born. The orchestrator reasons that this is a factual biographical question and sends it to Expert 7 (General Knowledge and Encyclopedic Reference), which is a reasonable choice. Expert 7 replies \"St. Petersburg\". The orchestrator accepts this answer and returns it as the final answer. However, the gold answer indicates Martyn Liadov was born in Moscow, not St. Petersburg, making the final answer incorrect.",
+      "answer_assessment": "incorrect",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "evidence": "Orchestrator reasons that the question is about a person's birthplace, selects Expert 7 (General Knowledge and Encyclopedic Reference) as appropriate, and sends a clear sub-question: 'Where was Martyn Liadov born?'",
+          "reason": "The orchestrator's reasoning is sound: it correctly identifies the task (finding a birthplace), selects a suitable expert from the roster (Expert 7 is explicitly described as covering 'biographies' and 'general-purpose reference material'), and formulates a clear, direct sub-question. The expert's reply is responsive and well-formed. Rule 4 applies: accepting a suitable expert's answer without a check is Informational, even if the answer is wrong. The fault lies with the expert, not the orchestrator's coordination.",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "evidence": "The orchestrator returns 'St. Petersburg' as the final answer, which is the reply from Expert 7.",
+          "reason": "The final answer simply reports what Expert 7 returned. The orchestrator did not state doubt about the expert's answer, did not make an unsupported claim from its own knowledge, and did not declare the task unanswerable. Rule 9 does not apply: there is no stated doubt (Verification failure), no declaration that the task cannot be answered (Premature termination), and no other error in the final answer unit itself. The error is in coord_r1's expert selection or the expert's factual mistake, not in the final answer unit's handling of the information. By rule 2, a unit that only carries forward an earlier fault without a new fault of its own is Informational.",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": "coord_r1",
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null
+        }
+      ],
+      "root_cause": {
+        "step_keys": [],
+        "why": "The final answer is incorrect, but no orchestrator unit contains an error. Expert 7 returned a wrong answer (St. Petersburg instead of Moscow), and the orchestrator accepted it without checking. By rule 4, accepting a suitable expert's responsive answer without a check is Informational, even if the answer is wrong. The fault is with the expert, not the orchestrator's coordination."
+      }
+    },
+    {
+      "traj_idx": 14,
+      "q_id": 5274,
+      "question": "Which Roxy Music hit single features Robert E Lee?",
+      "data_source": "triviaqa",
+      "is_correct": false,
+      "attempts": 3,
+      "problems": [
+        "final_answer: repeats_fault_from is set, so the label must be Informational (rule 2)"
+      ],
+      "answer_assessment": "incorrect",
+      "root_cause": {
+        "step_keys": [
+          "coord_r1"
+        ],
+        "why": "The orchestrator's unsupported belief that it is 'highly unlikely' for Roxy Music to feature Robert E. Lee led it to treat the question as erroneous rather than as a genuine factual query. This belief is contradicted by the gold answer 'Virginia Plain.' The orchestrator accepted Expert 1's 'no' reply without recognizing that its own reasoning was flawed, and terminated prematurely without consulting other music-focused experts."
+      },
+      "trace_reading": "The question asks which Roxy Music hit single features Robert E. Lee. The orchestrator reasons that Robert E. Lee was a Confederate general and it is unlikely a music artist would feature him in a song. It sends a sub-question to Expert 1 asking whether any Roxy Music hit single features Robert E. Lee. Expert 1 replies \"no\". The orchestrator then concludes that no such song exists and the question likely contains an error. However, the gold answer is \"Virginia Plain,\" a Roxy Music hit single that does feature Robert E. Lee. The orchestrator's final answer is incorrect.",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "contradicted_by": "Virginia Plain",
+          "declares_no_answer": false,
+          "evidence": "The orchestrator states 'It is highly unlikely that a music artist like Roxy Music would feature Robert E. Lee in a song' and acts on this unsupported belief by concluding the question contains an error, rather than genuinely investigating whether such a song exists.",
+          "hedge_quote": null,
+          "label": "Unsupported belief",
+          "other_proposal": null,
+          "own_fact_quote": "It is highly unlikely that a music artist like Roxy Music would feature Robert E. Lee in a song, especially as a hit single.",
+          "reason": "The orchestrator forms an unsupported belief based on its own assumptions about what is 'unlikely' rather than treating the question as a genuine factual query. The belief that it is unlikely for Roxy Music to feature Robert E. Lee is contradicted by the gold answer 'Virginia Plain,' which is a Roxy Music hit single that does feature Robert E. Lee. Rule 3(a) applies: the fact is contradicted by the gold answer.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Critical",
+          "step_key": "coord_r1",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": true,
+          "evidence": "The orchestrator concludes 'None of Roxy Music's hit singles feature Robert E. Lee. The question likely contains a mistake or misattribution.'",
+          "hedge_quote": null,
+          "label": "Premature termination",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The orchestrator declares that no answer exists and the question contains an error, terminating the search prematurely. Rule 9 applies: when declares_no_answer is true, the label is Premature termination. This carries forward the unsupported belief from coord_r1.",
+          "repeats_fault_from": "coord_r1",
+          "second_label": null,
+          "severity": "Error",
+          "step_key": "final_answer",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        }
+      ]
+    },
+    {
+      "traj_idx": 15,
+      "q_id": 5557,
+      "question": "'The Great American Chocolate Bar' is eponymously better known as 'the (What?) bar'?",
+      "data_source": "triviaqa",
+      "is_correct": false,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks what common name the chocolate bar \"The Great American Chocolate Bar\" is eponymously known as, expecting an answer in the form \"(What?) bar\". The orchestrator reasons that this is a general knowledge question about consumer products and sends a sub-question to Expert 1 asking for the common name. Expert 1 replies \"Hershey's Milk Chocolate Bar\". The orchestrator then answers \"Hershey's\", which does not match the gold answer \"Hershey\" (exact match fails because of the possessive form and the word \"Milk Chocolate Bar\" being omitted).",
+      "answer_assessment": "fuzzy_correct",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "evidence": "Expert 1 (General Knowledge: Culture, History, Science & Public Life) is well-suited because it covers cultural products, including consumer goods and popular culture.",
+          "reason": "The orchestrator correctly understands the question as asking for the common name of a chocolate bar. It selects an appropriate expert (Expert 1 with general knowledge) for a consumer product question. The sub-question is well-formed and directly targets the needed information. Rule 4 applies: the expert returns a responsive, well-formed answer that is not contradicted by anything in the trace at that point.",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "evidence": "Hershey's",
+          "reason": "The orchestrator extracts the brand name 'Hershey's' from the expert's answer 'Hershey's Milk Chocolate Bar', which directly answers the question asking for the name of the bar. The answer 'Hershey's' is a fuzzy match to the gold answer 'Hershey' (possessive form of the same brand name, which is a close synonym/variant). The orchestrator's extraction is reasonable and the answer is substantively correct.",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null
+        }
+      ],
+      "root_cause": {
+        "step_keys": [],
+        "why": "The trace contains no orchestrator errors. The answer is fuzzy_correct (Hershey's is a possessive variant of the gold answer Hershey), so there is no Critical unit."
+      }
+    },
+    {
+      "traj_idx": 16,
+      "q_id": 785,
+      "question": "Which film came out earlier, Confusion Na Wa or Bloodfist Iii: Forced To Fight?",
+      "data_source": "2wikimultihopqa",
+      "is_correct": true,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks which of two films came out earlier: \"Confusion Na Wa\" or \"Bloodfist III: Forced To Fight\". The orchestrator correctly identifies that it needs the release dates of both films and sends sub-questions to Expert 4 (Film, Television, and the Entertainment Industry). Expert 4 returns 2013 for \"Confusion Na Wa\" and 1992 for \"Bloodfist III: Forced To Fight\". The orchestrator correctly concludes that \"Bloodfist III: Forced To Fight\" came out earlier (1992 vs 2013) and provides that as the final answer, which matches the gold answer exactly.",
+      "answer_assessment": "correct",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "evidence": "I need to determine the release dates of the two films... I should consult an expert who specializes in film, television, and the entertainment industry",
+          "reason": "The orchestrator correctly understands the task (comparing release dates), selects the appropriate expert (Expert 4 specializes in film and entertainment), and formulates a sound sub-question to obtain the first piece of needed information. The reasoning and delegation are valid.",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "coord_r2",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "evidence": "The film \"Confusion Na Wa\" was released in 2013. Now, I need to find the release date of \"Bloodfist III: Forced To Fight\" to compare it",
+          "reason": "The orchestrator correctly uses the information from round 1, maintains the task goal (comparing release dates), and sends an appropriate follow-up sub-question to the same expert to obtain the second piece of needed information. The reasoning and delegation are sound.",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "evidence": "Bloodfist III: Forced To Fight",
+          "reason": "The orchestrator correctly compares the two release dates (1992 vs 2013) and provides the correct answer identifying which film came out earlier. The answer matches the gold answer exactly and follows logically from the expert replies received.",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null
+        }
+      ],
+      "root_cause": {
+        "step_keys": [],
+        "why": "The trace is correct with no errors. The orchestrator properly understood the task, selected the appropriate expert, obtained both release dates, and correctly determined which film came out earlier."
+      }
+    },
+    {
+      "traj_idx": 17,
+      "q_id": 1898,
+      "question": "In which city have Gary Ayres and Neil Craig both been head coach of the Crows?",
+      "data_source": "hotpotqa",
+      "is_correct": true,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks for the city where both Gary Ayres and Neil Craig have served as head coach of the Crows. The orchestrator reasons from its own knowledge that the Crows refers to the Adelaide Crows, an Australian rules football team, and that both Gary Ayres and Neil Craig are AFL coaches associated with the Adelaide Crows. The orchestrator concludes the answer is Adelaide without calling any expert. The final answer is Adelaide, which matches the gold answer exactly.",
+      "answer_assessment": "correct",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "hedge_quote": null,
+          "own_fact_quote": "the Adelaide Crows, an Australian rules football team based in Adelaide, South Australia",
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator states 'Given the names Gary Ayres and Neil Craig, this is likely related to a sports team. The term \"Crows\" is commonly associated with the Adelaide Crows, an Australian rules football team based in Adelaide, South Australia.'",
+          "reason": "The orchestrator correctly identifies the Adelaide Crows as the team in question and recognizes that both Gary Ayres and Neil Craig are AFL coaches associated with it. The reasoning is sound and the facts stated from the orchestrator's own knowledge are not contradicted by the gold answer. The orchestrator does not hedge its belief and proceeds with a valid conclusion. Rule 3 does not apply because the facts are not contradicted and not hedged.",
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator provides the final answer 'Adelaide', which matches the gold answer exactly and is supported by the reasoning in coord_r1.",
+          "reason": "The final answer is correct and matches the gold answer. The answer is supported by the orchestrator's reasoning in the previous round, which correctly identified Adelaide as the city where both Gary Ayres and Neil Craig served as head coaches of the Crows. No verification failure, premature termination, or other error applies.",
+          "second_label": null,
+          "other_proposal": null
+        }
+      ],
+      "root_cause": {
+        "step_keys": [],
+        "why": "The trace is correct. No Critical errors exist."
+      }
+    },
+    {
+      "traj_idx": 18,
+      "q_id": 2716,
+      "question": "What century did a notable subjective idealist live in?",
+      "data_source": "musique",
+      "is_correct": true,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks what century a notable subjective idealist lived in. The orchestrator reasons that George Berkeley, an 18th-century English philosopher known for subjective idealism, is a well-known figure in this school of thought, and concludes the answer is the 18th century without consulting an expert. The final answer is \"18th century\", which matches the gold answer exactly.",
+      "answer_assessment": "correct",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "hedge_quote": null,
+          "own_fact_quote": "George Berkeley, an 18th-century English philosopher",
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator identifies George Berkeley as a well-known figure associated with subjective idealism and correctly states he lived in the 18th century (1685-1753), providing a sound basis for the answer without requiring expert consultation.",
+          "reason": "The orchestrator's reasoning is sound: it correctly identifies a notable subjective idealist (George Berkeley), accurately states his century (18th), and justifies answering from general knowledge without expert consultation. The fact stated from its own knowledge is not contradicted by any part of the trace and is not hedged. Rule 3 does not apply; answering without an expert is valid when the reasoning is sound.",
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "evidence": "The final answer is '18th century', which matches the gold answer exactly and follows logically from the reasoning in coord_r1.",
+          "reason": "The final answer is correct and matches the gold answer. It is supported by the sound reasoning in coord_r1 and contains no new fault. Rule 9 does not apply; this is a straightforward correct answer.",
+          "second_label": null,
+          "other_proposal": null
+        }
+      ],
+      "root_cause": {
+        "step_keys": [],
+        "why": "The trace is correct; no Critical unit exists."
+      }
+    },
+    {
+      "traj_idx": 19,
+      "q_id": 3203,
+      "question": "who plays the dragon queen from game of thrones?",
+      "data_source": "nq",
+      "is_correct": true,
+      "attempts": 2,
+      "problems": null,
+      "answer_assessment": "correct",
+      "root_cause": {
+        "step_keys": [],
+        "why": "The trace is correct with no errors. The orchestrator made a sound inference about the character identity and delegated appropriately to obtain the correct answer."
+      },
+      "trace_reading": "The question asks who plays the Dragon Queen from Game of Thrones. The orchestrator reasons that \"Dragon Queen\" likely refers to Daenerys Targaryen (the \"Mother of Dragons\"), though it notes the term is not officially used. It sends a sub-question to Expert 1 asking who plays Daenerys Targaryen. Expert 1 returns \"Emilia Clarke,\" which matches the gold answer. The orchestrator provides this as the final answer, which is correct.",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator reasons that 'Dragon Queen' likely refers to Daenerys Targaryen and sends a sub-question to Expert 1: 'Who plays Daenerys Targaryen in Game of Thrones?'",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": "the most prominent dragon-wielding character is Daenerys Targaryen, who is often referred to as the \"Mother of Dragons\" or \"Queen of the Dragons.\"",
+          "reason": "The orchestrator correctly interprets the question as asking about Daenerys Targaryen (the Dragon Queen/Mother of Dragons), makes a reasonable inference about the character identity despite the non-standard terminology, and delegates to an appropriate expert (Expert 1, General Knowledge) with a well-formed sub-question. The reasoning is sound given what was known at that point.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "coord_r1",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator provides 'Emilia Clarke' as the final answer, which matches the expert reply and the gold answer.",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The final answer is correct and is based on a responsive expert reply that directly answers the sub-question. The orchestrator appropriately accepts and returns the expert's answer without unnecessary verification or doubt.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "final_answer",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        }
+      ]
+    },
+    {
+      "traj_idx": 20,
+      "q_id": 4392,
+      "question": "What sport does Paulo Grilo play?",
+      "data_source": "popqa",
+      "is_correct": true,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks what sport Paulo Grilo plays. The orchestrator correctly identifies that Expert 0 (Sports and Music Culture) is the most suitable expert for this factual question about a specific person's sport. It sends a direct sub-question to Expert 0, which returns \"football\". The orchestrator then provides this answer as the final answer, which matches the gold answer exactly.",
+      "answer_assessment": "correct",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "evidence": "Expert 0 specializes in sports and music culture, including professional and amateur sports such as football, basketball, rugby, etc., and careers in sports. This makes Expert 0 the most suitable to answer the question about Paulo Grilo's sport.",
+          "reason": "The orchestrator correctly understands the question, selects an appropriate expert from the roster (Expert 0 is explicitly described as covering sports and careers), and formulates a clear, direct sub-question. The expert assignment is sound given the available roster.",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "evidence": "The orchestrator returns 'football', which matches the expert's reply and the gold answer exactly.",
+          "reason": "The final answer is correct and is directly supported by the expert reply received in round 1. The orchestrator appropriately accepts the expert's responsive answer without unnecessary verification, following rule 4.",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null
+        }
+      ],
+      "root_cause": {
+        "step_keys": [],
+        "why": "The trace is correct. No Critical unit exists."
+      }
+    },
+    {
+      "traj_idx": 21,
+      "q_id": 6023,
+      "question": "Odysseus was King of which Greek state?",
+      "data_source": "triviaqa",
+      "is_correct": true,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks which Greek state Odysseus was king of. The orchestrator answers from its own knowledge without calling an expert, stating that Odysseus is the king of Ithaca, a small island in the Aegean Sea, based on classical literature and mythology. The final answer is \"Ithaca\", which matches the gold answers exactly.",
+      "answer_assessment": "correct",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "evidence": "Odysseus is a legendary figure from Greek mythology, most famously known as the hero of the epic poem \"The Odyssey.\" In the myth, Odysseus is the king of Ithaca, a small island in the Aegean Sea.",
+          "reason": "The orchestrator correctly identifies Odysseus as king of Ithaca from its own knowledge of classical mythology. The fact is not contradicted by any expert reply or the gold answer, and no hedge is present. Answering without an expert is valid when the knowledge is sound (rule 3, rule 4).",
+          "hedge_quote": null,
+          "own_fact_quote": "Odysseus is the king of Ithaca, a small island in the Aegean Sea",
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "evidence": "Ithaca",
+          "reason": "The final answer matches the gold answers exactly. The answer is correct and follows directly from the sound reasoning in coord_r1 (rule 9, rule S1).",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null
+        }
+      ],
+      "root_cause": {
+        "step_keys": [],
+        "why": "The trace is correct with no errors. The orchestrator answered from valid general knowledge about classical mythology."
+      }
+    },
+    {
+      "traj_idx": 22,
+      "q_id": 497,
+      "question": "Were Max Eastman and Arthur Kay (Musician) of the same nationality?",
+      "data_source": "2wikimultihopqa",
+      "is_correct": false,
+      "attempts": 2,
+      "problems": null,
+      "answer_assessment": "incorrect",
+      "root_cause": {
+        "step_keys": [
+          "coord_r1"
+        ],
+        "why": "The orchestrator stated unsupported beliefs about both individuals' nationalities from its own knowledge without expert verification. At least one of these beliefs contradicts the gold answer, which indicates the two individuals shared the same nationality. This is the root cause of the incorrect final answer."
+      },
+      "trace_reading": "The question asks whether Max Eastman and Arthur Kay (Musician) were of the same nationality. The orchestrator answers from its own knowledge without calling any expert: it states Max Eastman was American and Arthur Kay (Musician) was British, concluding they were not of the same nationality. The gold answer is \"yes\" (they were of the same nationality), so the final answer is incorrect. The orchestrator's reasoning contains unsupported beliefs about both individuals' nationalities, stated without expert verification.",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "contradicted_by": "yes",
+          "declares_no_answer": false,
+          "evidence": "The orchestrator states 'Max Eastman was an American writer, journalist, and activist' and 'Arthur Kay (the musician) is associated with the United Kingdom. He is a British musician' without calling any expert to verify these claims.",
+          "hedge_quote": null,
+          "label": "Unsupported belief",
+          "other_proposal": null,
+          "own_fact_quote": "Max Eastman was an American writer, journalist, and activist, known for his work in the early 20th century. He was born in the United States",
+          "reason": "The orchestrator answers a factual question about two individuals' nationalities entirely from its own knowledge without consulting any expert. The final answer is incorrect according to the gold answer, indicating at least one of the stated facts is wrong. Rule 3(a) applies: the orchestrator's stated facts about the nationalities are contradicted by the gold answer's indication that they shared the same nationality. This is the root cause of the wrong final answer.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Critical",
+          "step_key": "coord_r1",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The final answer 'No' is the direct output of the reasoning in coord_r1.",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The final_answer unit simply outputs the conclusion from coord_r1 without introducing a new fault. The error was committed in coord_r1 where the orchestrator formed unsupported beliefs about the nationalities. Rule 2 applies: a later unit that only carries forward an earlier fault is Informational.",
+          "repeats_fault_from": "coord_r1",
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "final_answer",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        }
+      ]
+    },
+    {
+      "traj_idx": 23,
+      "q_id": 1078,
+      "question": "Who was the first king of the longest Chinese dynasty?",
+      "data_source": "bamboogle",
+      "is_correct": false,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks for the first king of the longest Chinese dynasty. The orchestrator reasons from its own knowledge that the Qing Dynasty (1644–1912) is the longest Chinese dynasty and identifies Emperor Shunzhi as its first ruler. The orchestrator does not call any expert. The gold answer is \"King Wu of Zhou,\" indicating the longest dynasty is the Zhou Dynasty, not the Qing. The orchestrator's final answer \"Emperor Shunzhi\" is incorrect.",
+      "answer_assessment": "incorrect",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Unsupported belief",
+          "subtype": null,
+          "severity": "Critical",
+          "hedge_quote": null,
+          "own_fact_quote": "the Qing Dynasty lasted from 1644 to 1912, which is over 260 years—longer than any other dynasty. Therefore, the Qing Dynasty is the longest Chinese dynasty.",
+          "contradicted_by": "King Wu of Zhou",
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator states from its own knowledge that 'the Qing Dynasty lasted from 1644 to 1912, which is over 260 years—longer than any other dynasty' and builds the entire answer on this unsupported belief without consulting any expert.",
+          "reason": "The orchestrator states a factual claim about which dynasty is longest entirely from its own knowledge, without expert verification. This claim is contradicted by the gold answer, which identifies the Zhou Dynasty as the longest (via King Wu of Zhou as its first king). Rule 3(a) applies: the fact is contradicted by the gold answer. The orchestrator should have called an expert to verify this foundational claim before answering.",
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": "coord_r1",
+          "declares_no_answer": false,
+          "evidence": "The final answer 'Emperor Shunzhi' is the direct output of the reasoning in coord_r1.",
+          "reason": "The final answer carries forward the unsupported belief from coord_r1 without introducing a new fault. The error was committed in round 1; the final answer simply delivers that result. By rule 2, a later unit that only carries forward an earlier fault is labeled Informational.",
+          "second_label": null,
+          "other_proposal": null
+        }
+      ],
+      "root_cause": {
+        "step_keys": [
+          "coord_r1"
+        ],
+        "why": "The orchestrator's unsupported belief that the Qing Dynasty is the longest Chinese dynasty is the root cause of the incorrect final answer. The gold answer identifies the Zhou Dynasty (via King Wu of Zhou) as the longest, contradicting the orchestrator's foundational claim. Had the orchestrator verified this claim with an expert, it could have reached the correct answer."
+      }
+    },
+    {
+      "traj_idx": 24,
+      "q_id": 2006,
+      "question": "Linhai and Gongqingcheng are both what kinds of cities that are located in China?",
+      "data_source": "hotpotqa",
+      "is_correct": false,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks what kinds of cities Linhai and Gongqingcheng are, both located in China. The orchestrator answers from its own knowledge without calling any expert, stating that both are county-level cities under Hangzhou's jurisdiction in Zhejiang Province. The final answer is \"county-level cities\" (plural), while the gold answer is \"county-level city\" (singular). The grader marks this as incorrect due to exact string matching, though the meaning is equivalent.",
+      "answer_assessment": "fuzzy_correct",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "hedge_quote": null,
+          "own_fact_quote": "Linhai is a county-level city under the jurisdiction of Hangzhou, Zhejiang Province. Gongqingcheng is a county-level city in Zhejiang Province as well, under the jurisdiction of Hangzhou.",
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator states from its own knowledge that both Linhai and Gongqingcheng are county-level cities, which matches the gold answer's classification.",
+          "reason": "The orchestrator correctly identifies both cities as county-level cities from its own knowledge. The facts stated are not contradicted by any expert reply or other part of the trace, and no hedge is present. Answering without an expert is valid when the answer is sound (rule 3, rule 4).",
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "evidence": "The final answer is 'county-level cities', which conveys the same meaning as the gold answer 'county-level city' (plural vs singular form of the same classification).",
+          "reason": "The final answer correctly identifies the classification of both cities. The difference between 'county-level cities' (plural) and 'county-level city' (singular) is a grammatical variation, not a factual error. The answer is fuzzy_correct and contains no orchestrator fault.",
+          "second_label": null,
+          "other_proposal": null
+        }
+      ],
+      "root_cause": {
+        "step_keys": [],
+        "why": "The trace is correct. The final answer is fuzzy_correct (plural vs singular form of the same answer). No Critical unit exists."
+      }
+    },
+    {
+      "traj_idx": 25,
+      "q_id": 3120,
+      "question": "What treaty ceded territory to the US extending west to the river next to the city that's the home of the Juicy Lucy?",
+      "data_source": "musique",
+      "is_correct": false,
+      "attempts": 2,
+      "problems": null,
+      "answer_assessment": "incorrect",
+      "root_cause": {
+        "step_keys": [
+          "coord_r1"
+        ],
+        "why": "The orchestrator incorrectly identified the Juicy Lucy as being associated with San Antonio, Texas, when it is actually associated with Minneapolis, Minnesota. This unsupported belief led to the wrong river (San Antonio River instead of Mississippi River) and the wrong treaty (Treaty of Guadalupe Hidalgo instead of Treaty of Paris). Had the orchestrator verified this fact with an expert, it would have reached the correct answer."
+      },
+      "trace_reading": "The question asks for a treaty that ceded territory to the US extending west to a river next to the city home of the Juicy Lucy burger. The orchestrator reasons that the Juicy Lucy is associated with San Antonio, Texas, identifies the San Antonio River as the adjacent river, and concludes the treaty is the Treaty of Guadalupe Hidalgo (1848). The orchestrator does not call any expert. The gold answer is Treaty of Paris, which contradicts the orchestrator's answer.",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "contradicted_by": "Treaty of Paris",
+          "declares_no_answer": false,
+          "evidence": "The orchestrator states 'The Juicy Lucy is a popular burger, and its name is famously associated with the city of San Antonio, Texas' and builds the entire reasoning chain on this unsupported and incorrect fact.",
+          "hedge_quote": null,
+          "label": "Unsupported belief",
+          "other_proposal": null,
+          "own_fact_quote": "The Juicy Lucy is a popular burger, and its name is famously associated with the city of San Antonio, Texas.",
+          "reason": "The orchestrator states a fact from its own knowledge (the Juicy Lucy is associated with San Antonio) without calling an expert to verify. This fact is contradicted by the gold answer Treaty of Paris, which implies a different city and river. Rule 3(a) applies: the fact is contradicted by the gold answer. This is the root cause of the wrong final answer.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Critical",
+          "step_key": "coord_r1",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The final answer 'Treaty of Guadalupe Hidalgo' is the direct output of the reasoning in coord_r1.",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The final answer carries forward the fault from coord_r1 without introducing a new fault. Rule 2 applies: a later unit that only carries forward an earlier fault is Informational. The error was committed in coord_r1.",
+          "repeats_fault_from": "coord_r1",
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "final_answer",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        }
+      ]
+    },
+    {
+      "traj_idx": 26,
+      "q_id": 3149,
+      "question": "who is the father of genetics and what did he study?",
+      "data_source": "nq",
+      "is_correct": false,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks who is the father of genetics and what he studied. The orchestrator answers from its own knowledge without calling an expert, stating that Gregor Mendel is the father of genetics and that he studied inheritance of traits in pea plants. The gold answers include \"Mendel\", \"Gregor Mendel\", \"pea plants\", \"the common edible pea\", and \"variation in plants\". The system's final answer names Mendel and mentions pea plants but uses the phrase \"inheritance of traits in pea plants\" rather than matching the exact gold answer phrases. The grader marks this as incorrect due to exact string matching, though the answer is factually correct and semantically equivalent to the gold answers.",
+      "answer_assessment": "fuzzy_correct",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Informational",
+          "severity": "Informational",
+          "subtype": null,
+          "hedge_quote": null,
+          "own_fact_quote": "The individual widely recognized as the \"father of genetics\" is Gregor Mendel. He conducted experiments on pea plants in the 19th century, focusing on inheritance patterns and the transmission of traits from parents to offspring.",
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator states from its own knowledge that Gregor Mendel is the father of genetics and studied inheritance patterns in pea plants. These facts are not contradicted by the gold answers, which include \"Mendel\", \"Gregor Mendel\", \"pea plants\", and \"variation in plants\". The orchestrator's reasoning is sound and the facts are well-established.",
+          "reason": "The orchestrator correctly identifies Gregor Mendel as the father of genetics and accurately describes his work with pea plants and inheritance patterns. These facts are not contradicted by the gold answers and are well-supported by standard scientific knowledge. The decision to answer without calling an expert is valid for such well-established historical facts. Rule 3 does not apply: the facts are not contradicted and no hedge is present.",
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Informational",
+          "severity": "Informational",
+          "subtype": null,
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "evidence": "The final answer states: \"Gregor Mendel is considered the father of genetics. He studied the inheritance of traits in pea plants, leading to the formulation of the basic laws of genetics, including the laws of segregation and independent assortment.\" This directly answers both parts of the question and is consistent with the gold answers.",
+          "reason": "The final answer correctly identifies Gregor Mendel as the father of genetics and accurately describes his study of inheritance in pea plants. The answer is semantically equivalent to the gold answers (which include \"Mendel\", \"Gregor Mendel\", \"pea plants\", and \"variation in plants\"), though it uses different phrasing. The grader's exact-match failure does not reflect an orchestrator error; the answer is factually correct and appropriately responsive to the question.",
+          "second_label": null,
+          "other_proposal": null
+        }
+      ],
+      "root_cause": {
+        "step_keys": [],
+        "why": "The trace is correct. The grader's exact-match failure is due to phrasing differences, not an orchestrator error. The answer is semantically equivalent to the gold answers."
+      }
+    },
+    {
+      "traj_idx": 27,
+      "q_id": 3981,
+      "question": "what are the monomer building blocks of dna and rna?",
+      "data_source": "nq",
+      "is_correct": false,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks for the monomer building blocks of DNA and RNA. The orchestrator answers from its own knowledge without calling any expert, stating that the building blocks are nucleotides and providing detailed structural information about their composition (phosphate group, sugar, and nitrogenous bases). The gold answer is simply \"Nucleotides\", and the grader marked the final answer as incorrect despite exact string matching being false—likely because the grader expected only the word \"nucleotides\" rather than the elaborated explanation. The trace contains no expert calls and relies entirely on the orchestrator's own knowledge.",
+      "answer_assessment": "fuzzy_correct",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "evidence": "The question asks about the monomer building blocks of DNA and RNA. This is a fundamental concept in molecular biology. DNA and RNA are composed of nucleotides, which are the basic building blocks.",
+          "reason": "The orchestrator correctly identifies that the question asks for the monomer building blocks of DNA and RNA and provides the accurate answer: nucleotides. The reasoning is sound, the facts stated (nucleotides as building blocks, their composition of phosphate group, sugar, and nitrogenous bases) are not contradicted by the gold answer or any other part of the trace. The orchestrator's decision to answer from its own knowledge without calling an expert is valid for this well-established scientific fact. Rule 3 does not apply: there is no hedge, and the facts are not contradicted.",
+          "hedge_quote": null,
+          "own_fact_quote": "DNA and RNA are composed of nucleotides, which are the basic building blocks. Each nucleotide consists of three components: a phosphate group, a sugar (deoxyribose in DNA and ribose in RNA), and a nitrogenous base (adenine, thymine, cytosine, guanine, or uracil in RNA instead of thymine).",
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "evidence": "The monomer building blocks of DNA and RNA are nucleotides. Each nucleotide consists of a phosphate group, a sugar (deoxyribose in DNA and ribose in RNA), and a nitrogenous base (adenine, thymine, cytosine, guanine, or uracil in RNA instead of thymine).",
+          "reason": "The final answer correctly states that nucleotides are the monomer building blocks and provides accurate supporting detail. The gold answer is 'Nucleotides', and the final answer contains this core answer with elaboration. Although the grader marked it as incorrect (likely due to exact string matching expecting only 'Nucleotides'), the answer is semantically correct and fuzzy-matches the gold answer. The orchestrator does not state doubt, does not declare the task unanswerable, and provides a factually sound response. Rule 9 does not trigger any error condition.",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "second_label": null,
+          "other_proposal": null
+        }
+      ],
+      "root_cause": {
+        "step_keys": [],
+        "why": "The trace contains no orchestrator errors. The answer is correct (fuzzy match to the gold answer 'Nucleotides'), and both units are Informational. The grader's rejection appears to be due to exact string matching rather than a substantive error in the orchestrator's reasoning or response."
+      }
+    },
+    {
+      "traj_idx": 28,
+      "q_id": 4144,
+      "question": "Who is the father of Peter II of Portugal?",
+      "data_source": "popqa",
+      "is_correct": false,
+      "attempts": 1,
+      "problems": null,
+      "trace_reading": "The question asks for the father of Peter II of Portugal. The gold answer is John IV of Portugal. The orchestrator reasons from its own knowledge that Peter II reigned 1581–1582 and concludes his father was John III of Portugal (who ruled 1521–1557), without consulting any expert. The final answer is John III of Portugal, which does not match the gold answer John IV of Portugal. The trace contains a factual error in the orchestrator's own reasoning: the dates and lineage stated are contradicted by the gold answer.",
+      "answer_assessment": "incorrect",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "step_key": "coord_r1",
+          "label": "Unsupported belief",
+          "subtype": null,
+          "severity": "Critical",
+          "hedge_quote": null,
+          "own_fact_quote": "Given that Peter II was the son of King John III of Portugal, who ruled from 1521 to 1557, and Peter II was born in 1581, it is logical to conclude that John III was his father.",
+          "contradicted_by": "John IV of Portugal",
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": null,
+          "declares_no_answer": false,
+          "evidence": "The orchestrator states 'Given that Peter II was the son of King John III of Portugal' and 'it is logical to conclude that John III was his father' without expert verification, but the gold answer identifies John IV of Portugal as the father.",
+          "reason": "The orchestrator states a genealogical fact from its own knowledge ('Peter II was the son of King John III of Portugal') and acts on it to provide the final answer, but this fact is contradicted by the gold answer which names John IV of Portugal as the father. Rule 3(a) applies: the fact is contradicted by the gold answer. This is the root cause of the incorrect final answer.",
+          "second_label": null,
+          "other_proposal": null
+        },
+        {
+          "step_key": "final_answer",
+          "label": "Informational",
+          "subtype": null,
+          "severity": "Informational",
+          "hedge_quote": null,
+          "own_fact_quote": null,
+          "contradicted_by": null,
+          "unchecked_doubt_quote": null,
+          "repeats_fault_from": "coord_r1",
+          "declares_no_answer": false,
+          "evidence": "The final answer 'John III of Portugal' is the direct output of the reasoning in coord_r1.",
+          "reason": "The final answer carries forward the unsupported belief from coord_r1 without introducing a new fault. Rule 2 applies: a later unit that only carries forward an earlier fault is labeled Informational.",
+          "second_label": null,
+          "other_proposal": null
+        }
+      ],
+      "root_cause": {
+        "step_keys": [
+          "coord_r1"
+        ],
+        "why": "The orchestrator stated an unsupported genealogical fact from its own knowledge (that Peter II was the son of John III) without consulting an expert, and this fact is contradicted by the gold answer (John IV). This is the root cause of the incorrect final answer."
+      }
+    },
+    {
+      "traj_idx": 29,
+      "q_id": 5945,
+      "question": "\"What does \"\"casa grande\"\" mean in Spanish?\"?",
+      "data_source": "triviaqa",
+      "is_correct": false,
+      "attempts": 2,
+      "problems": null,
+      "answer_assessment": "incorrect",
+      "root_cause": {
+        "step_keys": [
+          "coord_r1"
+        ],
+        "why": "The orchestrator incorrectly assumed 'casa grande' is a straightforward translation request and answered from its own knowledge without consulting an expert. The gold answers indicate the question asks for a specific reference or proper noun (\"Big House\"), not a literal translation. This unsupported belief led directly to the wrong final answer."
+      },
+      "trace_reading": "The question asks for the English translation of the Spanish phrase \"casa grande\". The orchestrator answers from its own knowledge without calling an expert, translating \"casa\" as \"house\" and \"grande\" as \"large\", yielding \"large house\". The gold answers indicate the correct answer is \"Big House\" (or variants like \"The Big House\", \"Big house\", etc.), which is a proper noun referring to a disambiguation page or specific films/places, not a literal translation. The orchestrator's literal translation is factually correct as a translation but does not match the gold answer, which appears to be asking for a specific reference or proper noun rather than a simple translation.\"",
+      "trace_valid": true,
+      "trace_valid_reason": null,
+      "units": [
+        {
+          "contradicted_by": "Big House",
+          "declares_no_answer": false,
+          "evidence": "The orchestrator states: \"'Casa' means 'house' in Spanish, and 'grande' means 'large' or 'big.' Therefore, 'casa grande' translates to 'large house' or 'big house' in English. This is a common phrase and does not require consultation with an expert agent.\"",
+          "hedge_quote": null,
+          "label": "Unsupported belief",
+          "other_proposal": null,
+          "own_fact_quote": "\"Casa\" means \"house\" in Spanish, and \"grande\" means \"large\" or \"big.\"",
+          "reason": "The orchestrator acts on a fact from its own knowledge—that 'casa grande' is a straightforward translation meaning 'large house'—without consulting an expert. While the literal translation is correct, the gold answers indicate the question is asking for a specific reference (\"Big House\" as a proper noun, disambiguation page, or film title), not a literal translation. The orchestrator's assumption that this is a simple translation request, not a reference lookup, is contradicted by the gold answer. Rule 3(a) applies: the fact is contradicted by the gold answer.",
+          "repeats_fault_from": null,
+          "second_label": null,
+          "severity": "Critical",
+          "step_key": "coord_r1",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        },
+        {
+          "contradicted_by": null,
+          "declares_no_answer": false,
+          "evidence": "The final answer \"large house\" is the direct output of the reasoning in coord_r1.",
+          "hedge_quote": null,
+          "label": "Informational",
+          "other_proposal": null,
+          "own_fact_quote": null,
+          "reason": "The final answer carries forward the fault from coord_r1 without introducing a new fault. The error was committed in the reasoning and decision not to consult an expert; the final answer simply outputs that decision. Rule 2 applies: a later unit that only carries forward an earlier fault is Informational.",
+          "repeats_fault_from": "coord_r1",
+          "second_label": null,
+          "severity": "Informational",
+          "step_key": "final_answer",
+          "subtype": null,
+          "unchecked_doubt_quote": null
+        }
+      ]
+    }
+  ]
+}

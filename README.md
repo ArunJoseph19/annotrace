@@ -54,6 +54,10 @@ When a model is asked, the text of the steps being annotated is sent to that mod
 
 `evaluation/` holds everything behind the numbers in the paper.
 
+**Agreement with human labels (paper, Section 4).** `evaluation/revised_codebook/` has the hand-labelled reference for 68 orchestrator steps on 30 runs (final, v4 codebook), the labels of Claude Sonnet 4.6 and Haiku 4.5 with that codebook and with the first one (v1), the codebook and system prompt, and all of it as Annotrace exports. Open `annotrace_exports/reference_v4.json` and `model_sonnet_v4.json` in Compare. To recompute: `python evaluation/revised_codebook/to_exports.py . <batch_30.jsonl> evaluation/revised_codebook/annotrace_exports`.
+
+**Earlier codebook, 40 runs, 348 steps.** The files below are from an earlier, step-level codebook (two annotators' first passes and the consolidated set, with six models' labels).
+
 | Path | Contents |
 |---|---|
 | `labels/human_labels_final.json` | The released human label set for the 40-run coordinator corpus (348 steps) |

@@ -1,0 +1,920 @@
+{
+ "format_version": 4,
+ "schema": {
+  "id": "orchestrator_v4",
+  "name": "Orchestrator errors (v4)",
+  "description": "",
+  "ask_reason": true,
+  "questions": [
+   {
+    "id": "error_type",
+    "prompt": "What error, if any, does this orchestrator step make?",
+    "labels": [
+     "Informational",
+     "Goal misunderstanding",
+     "Constraint loss",
+     "Dependency loss",
+     "Wrong subtask generation",
+     "Wrong expert assignment",
+     "Repeating coordination",
+     "Redundant work",
+     "Unsupported belief",
+     "Information loss",
+     "Verification failure",
+     "State-tracking failure",
+     "Premature termination",
+     "OTHER"
+    ],
+    "applies_to": [
+     "decision",
+     "output"
+    ],
+    "ask_if": null
+   },
+   {
+    "id": "severity",
+    "prompt": "How severe is it?",
+    "labels": [
+     "Critical",
+     "Error",
+     "Warning",
+     "Informational"
+    ],
+    "applies_to": [
+     "decision",
+     "output"
+    ],
+    "ask_if": null
+   }
+  ]
+ },
+ "adapter": "coordinator",
+ "kinds": [
+  "decision",
+  "output"
+ ],
+ "source_file": "batch_30.jsonl",
+ "exported_at": "2026-11-17T11:03:20",
+ "traces": [
+  {
+   "trace_id": "batch_30.jsonl#0",
+   "title": "Which museum was established first, Museum Of Croatian Archaeological Monuments or Bayernhof Music Museum?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Repeating coordination",
+      "severity": "Critical"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Premature termination",
+      "severity": "Error"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#1",
+   "title": "What was the founding date of the university in which Plotonium was discovered?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Premature termination",
+      "severity": "Critical"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#2",
+   "title": "What organization affiliated with the National Collegiate Athletic Association Division were the 2012 Hawaii Warriors football team first year members of?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Goal misunderstanding",
+      "severity": "Critical"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#3",
+   "title": "By 1931, what percentage of the world's Jews were the group of Jews that represented the bulk of modern Jewry?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#4",
+   "title": "when did linkin park release one more light?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#5",
+   "title": "Who was the producer of The Sweet Sins of Sexy Susan?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#6",
+   "title": "What is The Valley the capital of?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Goal misunderstanding",
+      "severity": "Critical"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#7",
+   "title": "Which opera by Borodin features the Polovtsian Dances?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Verification failure",
+      "severity": "Critical"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Premature termination",
+      "severity": "Error"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#8",
+   "title": "Where was the place of death of the director of film The River Wild?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#9",
+   "title": "In what year was the tallest lattice tower completed?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#10",
+   "title": "Kam Heskin plays Paige Morgan in a 2004 film directed by who?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#11",
+   "title": "In the movie A League of their Own, who played the husband of the person who also played Thelma in the movie Thelma and Louise?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Unsupported belief",
+      "severity": "Critical"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "coord_r3",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Premature termination",
+      "severity": "Error"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#12",
+   "title": "what kind of dog is nana in snow dogs?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#13",
+   "title": "In what city was Martyn Liadov born?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#14",
+   "title": "Which Roxy Music hit single features Robert E Lee?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Unsupported belief",
+      "severity": "Critical"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Premature termination",
+      "severity": "Error"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#15",
+   "title": "'The Great American Chocolate Bar' is eponymously better known as 'the (What?) bar'?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#16",
+   "title": "Which film came out earlier, Confusion Na Wa or Bloodfist Iii: Forced To Fight?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#17",
+   "title": "In which city have Gary Ayres and Neil Craig both been head coach of the Crows?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Unsupported belief",
+      "severity": "Error"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#18",
+   "title": "What century did a notable subjective idealist live in?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#19",
+   "title": "who plays the dragon queen from game of thrones?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#20",
+   "title": "What sport does Paulo Grilo play?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#21",
+   "title": "Odysseus was King of which Greek state?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#22",
+   "title": "Were Max Eastman and Arthur Kay (Musician) of the same nationality?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Unsupported belief",
+      "severity": "Critical"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#23",
+   "title": "Who was the first king of the longest Chinese dynasty?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Unsupported belief",
+      "severity": "Critical"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#24",
+   "title": "Linhai and Gongqingcheng are both what kinds of cities that are located in China?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#25",
+   "title": "What treaty ceded territory to the US extending west to the river next to the city that's the home of the Juicy Lucy?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Unsupported belief",
+      "severity": "Critical"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#26",
+   "title": "who is the father of genetics and what did he study?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#27",
+   "title": "what are the monomer building blocks of dna and rna?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#28",
+   "title": "Who is the father of Peter II of Portugal?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Unsupported belief",
+      "severity": "Critical"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#29",
+   "title": "\"What does \"\"casa grande\"\" mean in Spanish?\"?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "",
+     "source": "human"
+    }
+   ]
+  }
+ ]
+}

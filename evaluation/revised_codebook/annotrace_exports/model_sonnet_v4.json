@@ -1,0 +1,920 @@
+{
+ "format_version": 4,
+ "schema": {
+  "id": "orchestrator_v4",
+  "name": "Orchestrator errors (v4)",
+  "description": "",
+  "ask_reason": true,
+  "questions": [
+   {
+    "id": "error_type",
+    "prompt": "What error, if any, does this orchestrator step make?",
+    "labels": [
+     "Informational",
+     "Goal misunderstanding",
+     "Constraint loss",
+     "Dependency loss",
+     "Wrong subtask generation",
+     "Wrong expert assignment",
+     "Repeating coordination",
+     "Redundant work",
+     "Unsupported belief",
+     "Information loss",
+     "Verification failure",
+     "State-tracking failure",
+     "Premature termination",
+     "OTHER"
+    ],
+    "applies_to": [
+     "decision",
+     "output"
+    ],
+    "ask_if": null
+   },
+   {
+    "id": "severity",
+    "prompt": "How severe is it?",
+    "labels": [
+     "Critical",
+     "Error",
+     "Warning",
+     "Informational"
+    ],
+    "applies_to": [
+     "decision",
+     "output"
+    ],
+    "ask_if": null
+   }
+  ]
+ },
+ "adapter": "coordinator",
+ "kinds": [
+  "decision",
+  "output"
+ ],
+ "source_file": "batch_30.jsonl",
+ "exported_at": "2026-11-17T11:03:20",
+ "traces": [
+  {
+   "trace_id": "batch_30.jsonl#0",
+   "title": "Which museum was established first, Museum Of Croatian Archaeological Monuments or Bayernhof Music Museum?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "Sending the first sub-question about the Museum of Croatian Archaeological Monuments to Expert 1 (General Knowledge) is a reasonable first step. Expert 1's domain covers history and institutions, making it a plausible choice. No fault is committed here.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Repeating coordination",
+      "severity": "Critical"
+     },
+     "reason": "Expert 1 just failed with 'Max iterations reached without producing an answer.' Rather than switching to a different expert (e.g., Expert 2 for built heritage/local history, or Expert 7 for encyclopedic reference), the orchestrator sends another sub-question to the same Expert 1 that just failed. This is the same approach after evidence it does not work, with no new information or meaningful modification, while other relevant experts were available.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Premature termination",
+      "severity": "Error"
+     },
+     "reason": "After only querying Expert 1 twice (both failed), the orchestrator declares the task unanswerable without trying other available experts such as Expert 2 (Regional Geography, Local History, and Built Heritage) or Expert 7 (General Knowledge and Encyclopedic Reference), which are clearly relevant to museum founding dates. Reasonable options remained unexplored.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#1",
+   "title": "What was the founding date of the university in which Plotonium was discovered?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator reasonably suspects the premise may be false and sends a verification question to Expert 7, a general-knowledge expert. This is a sound first step given the unfamiliar term.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator accepts Expert 7's reply ('no') and concludes the premise is false. Per rule 4, accepting a responsive expert answer without stated doubt is Informational. The fault (if any) manifests at the final answer where the orchestrator stops without exploring other options.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Premature termination",
+      "severity": "Critical"
+     },
+     "reason": "The orchestrator stops after a single expert (Expert 7) returned a brief 'no', while several other experts (e.g., Expert 1 General Knowledge, Expert 2 Regional Geography/Built Heritage, Expert 3 Modern History) could have been queried about Plotonium and the university associated with it. The gold answer confirms a real founding date exists, so reasonable options remained unexplored.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#2",
+   "title": "What organization affiliated with the National Collegiate Athletic Association Division were the 2012 Hawaii Warriors football team first year members of?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identifies the question's need, selects a suitable general-knowledge expert (Expert 1), and asks a reasonable sub-question about the NCAA division and conference for the 2012 Hawaii Warriors. This is a sound delegation step.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Goal misunderstanding",
+      "severity": "Critical"
+     },
+     "reason": "The question asks which organization (conference) affiliated with the NCAA Division the team were first-year members of. The expert returned 'Mountain West Conference' \u2014 the direct answer. The orchestrator instead concludes the answer is 'NCAA Division I,' misreading the question as asking for the division rather than the conference. This is a misunderstanding of what the question asks (WHAT the question targets), not merely a bad sub-question.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The final answer simply carries forward the faulty conclusion reached in coord_r2. The fault was committed in coord_r2; this unit only repeats it without introducing a new error of its own.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#3",
+   "title": "By 1931, what percentage of the world's Jews were the group of Jews that represented the bulk of modern Jewry?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identifies the question as asking about the demographic share of Eastern European (Ashkenazi) Jews in 1931, and appropriately routes it to Expert 1, a general knowledge expert well-suited for historical demographic data. The sub-question is well-formed and directly targets the needed information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator accepted Expert 1's responsive, well-formed answer of 90% without any stated doubt or disagreement, and returned it as the final answer. Per rule 4, accepting a suitable expert's responsive answer without a check is Informational even if the answer turns out to be wrong. The expert is at fault for the incorrect figure, not the orchestrator.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#4",
+   "title": "when did linkin park release one more light?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identified the question as music-related and routed it to Expert 0, which is the most suitable expert per the roster. The sub-question is well-formed and directly addresses what is asked. Per rule 4, accepting a responsive, well-formed expert answer without a check is valid.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator accepted Expert 0's answer of 'October 3, 2017' without any stated doubt or disagreement. Per rule 4, when a suitable expert returns a responsive and well-formed answer and nothing in the trace conflicts with it, accepting it is Informational \u2014 even if the answer turns out to be wrong. The expert is at fault, not the orchestrator.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#5",
+   "title": "Who was the producer of The Sweet Sins of Sexy Susan?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identified the question as being about a film production and routed it to Expert 4, which is the most appropriate expert for film/entertainment production details. The sub-question is well-formed and directly addresses what is asked.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator accepted a responsive, well-formed answer from a suitable expert (Expert 4) with no conflicting information in the trace. Per rule 4, accepting such an answer without further verification is Informational \u2014 the expert is at fault for the wrong answer, not the orchestrator.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#6",
+   "title": "What is The Valley the capital of?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Goal misunderstanding",
+      "severity": "Critical"
+     },
+     "reason": "The question asks what territory 'The Valley' is the capital OF \u2014 The Valley is the capital city, not a region with its own capital. The orchestrator inverts the relation, treating The Valley as a region and asking for its capital. This is a reversed-relation goal misunderstanding (rule: 'reversed relation' under Goal misunderstanding).",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The final answer simply accepts the expert reply and carries forward the fault introduced in coord_r1 (the goal misunderstanding). No new fault is introduced here; the orchestrator straightforwardly accepts a responsive expert answer (rule 4 and rule 2).",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#7",
+   "title": "Which opera by Borodin features the Polovtsian Dances?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identifies Prince Igor as the likely answer, hedges appropriately, and sends a well-formed sub-question to Expert 1 (a general knowledge expert), which is a reasonable choice for a music/opera question. The sub-question is sound and the expert assignment is valid.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Verification failure",
+      "severity": "Critical"
+     },
+     "reason": "Expert 1 confirmed that Alexander Borodin composed the Polovtsian Dances. The orchestrator explicitly states this 'contradicts established historical knowledge' and replaces the expert's answer with its own belief (that Rimsky-Korsakov composed them) without calling any expert to verify. Per rule 5, stating disagreement with an expert answer and proceeding without checking is Verification failure (missed verification).",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Premature termination",
+      "severity": "Error"
+     },
+     "reason": "The final answer of 'None' declares no answer exists, directly following from the Verification failure in coord_r2. Per rule 9, Premature termination applies here since the orchestrator stopped while reasonable options remained (e.g., consulting Expert 0 or Expert 7 about Borodin's opera). The root fault is in coord_r2, making this unit Error severity.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#8",
+   "title": "Where was the place of death of the director of film The River Wild?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly understood the multi-hop nature of the question and appropriately delegated to Expert 4 (Film, Television, and the Entertainment Industry) to identify the director. This is a sound first step.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly used the result from round 1 (Curtis Hanson) and sent a well-formed follow-up question to Expert 7 (General Knowledge and Encyclopedic Reference), which is a suitable expert for biographical facts. The sub-question is properly formed and the expert choice is reasonable.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Information loss",
+      "severity": "Critical"
+     },
+     "reason": "Expert 7 returned 'Toronto' as the place of death of Curtis Hanson, which is incorrect per the gold answer (Los Angeles, California). The orchestrator accepted this answer without any stated doubt or further verification. While the answer is well-formed and responsive, it is factually wrong, making this an over-acceptance of a wrong expert reply. Per S2 and S3, this is the earliest (and only) orchestrator fault that the wrong final answer follows from, making it Critical.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#9",
+   "title": "In what year was the tallest lattice tower completed?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identified the question as a factual/encyclopedic one and routed it to Expert 1 (General Knowledge), which is a reasonable choice given the roster. The sub-question accurately reflects the original question. No fault in reasoning or delegation.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator accepted a responsive, well-formed answer from Expert 1 ('June 27, 2018') without any stated doubt. Per rule 4, accepting a plausible expert answer without a check is Informational \u2014 the expert is at fault, not the orchestrator. The wrong final answer is due to the expert's incorrect reply, not an orchestrator error.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#10",
+   "title": "Kam Heskin plays Paige Morgan in a 2004 film directed by who?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identifies the task, chooses Expert 4 (Film, Television, and the Entertainment Industry) which is the most appropriate expert for a question about a 2004 film's director, and sends a well-formed sub-question. This is a sound delegation decision given the roster.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator accepts a responsive, well-formed answer from the suitable Expert 4 and returns it as the final answer. Per rule 4, when a suitable expert returns a responsive and well-formed answer and nothing in the trace conflicts with it, accepting it without a check is Informational \u2014 even if the answer is wrong. The expert is at fault, not the orchestrator.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#11",
+   "title": "In the movie A League of their Own, who played the husband of the person who also played Thelma in the movie Thelma and Louise?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Unsupported belief",
+      "severity": "Critical"
+     },
+     "reason": "The orchestrator states from its own knowledge that no husband character connected to Geena Davis (Thelma) exists in A League of Their Own. This is contradicted by the gold answer (Bill Pullman played the husband of Geena Davis's character in A League of Their Own), making this an unsupported belief per rule 3a.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator repeats the same false belief from coord_r1 about Geena Davis not being in A League of Their Own. Per rule 2, this unit only carries forward the earlier fault without introducing a new one.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r3",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "This round carries forward the false belief from coord_r1 without introducing a new fault of its own. Per rule 2, a later unit that only carries forward an earlier fault is Informational.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The final answer follows directly from the unsupported belief established in coord_r1 and carried through the trace. Per rule 2, this unit only carries forward the earlier fault without introducing a new one.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#12",
+   "title": "what kind of dog is nana in snow dogs?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identifies the question as being about a film character and routes it to Expert 6, which specializes in film, television, and narrative fiction including character details. This is a sound expert assignment and a well-formed sub-question.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator accepts Expert 6's answer of 'Labrador Retriever' without stated doubt. Per rule 4, when a suitable expert returns a responsive and well-formed answer and nothing in the trace conflicts with it, accepting it without a check is Informational \u2014 even if the answer is wrong. The expert is at fault, not the orchestrator.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#13",
+   "title": "In what city was Martyn Liadov born?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identifies the question as a biographical/encyclopedic lookup and routes it to Expert 7, which is the appropriate general-knowledge expert. The reasoning and expert selection are sound given the available roster.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator accepted a responsive, well-formed answer from a suitable expert (Expert 7) with no conflicting information in the trace. Per rule 4, accepting such an answer without further verification is Informational \u2014 the fault lies with the expert, not the orchestrator.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#14",
+   "title": "Which Roxy Music hit single features Robert E Lee?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Wrong subtask generation",
+      "severity": "Critical"
+     },
+     "reason": "The orchestrator's reasoning correctly identifies the target (which Roxy Music hit single features Robert E. Lee), but the sub-question it sends is a yes/no question ('Does any Roxy Music hit single feature Robert E. Lee?') rather than asking which specific song features Robert E. Lee. This badly-formed sub-question invites a simple 'no' rather than the name of the song. Per rule 6, the reasoning has the right target but the sub-question is badly formed.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Premature termination",
+      "severity": "Error"
+     },
+     "reason": "The orchestrator concludes no answer exists and stops, while reasonable options remained: other music-focused experts (Expert 0, Expert 6) had not been consulted, and a properly formed sub-question asking which Roxy Music song references Robert E. Lee could have retrieved the correct answer 'Virginia Plain'. Per rule 9, Premature termination applies to the final_answer unit.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#15",
+   "title": "'The Great American Chocolate Bar' is eponymously better known as 'the (What?) bar'?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identifies the question as a general knowledge/consumer culture question and routes it to Expert 1, which is a reasonable choice given the roster. The sub-question is well-formed and directly targets the needed information.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator accepts Expert 1's well-formed, responsive answer ('Hershey's Milk Chocolate Bar') and extracts 'Hershey's' as the common name. The gold answer is 'Hershey' and the orchestrator answered 'Hershey's', which is functionally equivalent (possessive form of the same brand name), making this fuzzy correct. No fault is present.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#16",
+   "title": "Which film came out earlier, Confusion Na Wa or Bloodfist Iii: Forced To Fight?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identified the task as requiring film release date information and appropriately routed the first sub-question to Expert 4, which specializes in film and television. The sub-question is well-formed and directly serves the objective.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "coord_r2",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "Having obtained the release date for the first film, the orchestrator correctly proceeds to ask for the release date of the second film from the same expert. The sub-question is well-formed and the expert choice is appropriate.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly compared the two release dates (1992 vs 2013) and concluded that 'Bloodfist III: Forced To Fight' came out earlier, which matches the gold answer. The final answer is sound and well-supported by the expert replies.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#17",
+   "title": "In which city have Gary Ayres and Neil Craig both been head coach of the Crows?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identifies the Adelaide Crows as the team in question and reasons that both coaches are associated with it. The fact is not hedged in a way that triggers rule 3b (the orchestrator says 'likely' but then confirms the reasoning without acting on uncertainty), and the conclusion is not contradicted by any part of the trace or gold answer. Answering from own knowledge without calling an expert is valid per the decision rules.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The final answer 'Adelaide' matches the gold answer exactly. The orchestrator correctly concluded from its own knowledge without any contradicted or hedged facts requiring verification.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#18",
+   "title": "What century did a notable subjective idealist live in?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identifies George Berkeley as a notable subjective idealist and states he lived in the 18th century. This fact is not hedged and is not contradicted by anything in the trace or gold answer, so answering from its own knowledge is valid per rule 3.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The final answer correctly states '18th century', matching the gold answer. It follows soundly from the orchestrator's valid reasoning in coord_r1.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#19",
+   "title": "who plays the dragon queen from game of thrones?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly interprets 'Dragon Queen' as referring to Daenerys Targaryen and sends a well-formed sub-question to Expert 1 (General Knowledge), which is a suitable expert for this entertainment/pop culture question. The reasoning is sound and the delegation is appropriate.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly accepts Expert 1's responsive and well-formed answer 'Emilia Clarke' and returns it as the final answer, which matches the gold answer. No fault is present.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#20",
+   "title": "What sport does Paulo Grilo play?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identified the question as sports-related and routed it to Expert 0, which is the most appropriate expert for sports career information. The sub-question is well-formed and directly addresses the task.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator accepted the expert's responsive, well-formed answer 'football' and returned it as the final answer, which matches the gold answer. This is a valid acceptance per rule 4.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#21",
+   "title": "Odysseus was King of which Greek state?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identifies the question as asking about Odysseus's kingdom, states the well-known fact that he was king of Ithaca from its own knowledge without hedging, and this fact is confirmed by the gold answer. Answering without calling an expert is valid per rule 3.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The final answer 'Ithaca' directly matches the gold answer. The orchestrator correctly answered from its own unhedged, uncontradicted knowledge. No fault is present.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#22",
+   "title": "Were Max Eastman and Arthur Kay (Musician) of the same nationality?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Unsupported belief",
+      "severity": "Critical"
+     },
+     "reason": "The orchestrator states from its own knowledge that Arthur Kay (Musician) is British, without calling any expert. This fact is contradicted by the gold answer ('yes' \u2014 same nationality as Max Eastman, who is American), meaning Arthur Kay is also American, not British. Under rule 3a, this is an Unsupported belief because the own-fact claim is contradicted by the gold answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The final answer directly follows from the unsupported belief established in coord_r1. The fault was committed there; this unit only carries it forward (rule 2). Per rule 9, no new fault is introduced here.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#23",
+   "title": "Who was the first king of the longest Chinese dynasty?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Unsupported belief",
+      "severity": "Critical"
+     },
+     "reason": "The orchestrator states from its own knowledge that the Qing Dynasty is the longest Chinese dynasty and acts on this belief to identify the first ruler. This fact is contradicted by the gold answer, which identifies King Wu of Zhou as the answer, implying the Zhou Dynasty (~790 years) is the longest. Per rule 3a, a fact stated from the orchestrator's own knowledge that is contradicted by the gold answer is labeled Unsupported belief.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The final answer directly follows from the unsupported belief established in coord_r1. The fault was committed in coord_r1; this unit only carries it forward without introducing a new fault of its own (rule 2).",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#24",
+   "title": "Linhai and Gongqingcheng are both what kinds of cities that are located in China?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator states facts from its own knowledge about the administrative classification of Linhai and Gongqingcheng. These facts are not contradicted by the gold answer or any expert reply, and the orchestrator does not hedge its claim. Answering without calling an expert is valid per rule 3.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The final answer 'county-level cities' matches the gold answer 'county-level city' (plural vs singular), making it fuzzy correct. The orchestrator correctly identified the administrative classification of both cities from its own knowledge, which was not contradicted anywhere in the trace.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#25",
+   "title": "What treaty ceded territory to the US extending west to the river next to the city that's the home of the Juicy Lucy?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Unsupported belief",
+      "severity": "Critical"
+     },
+     "reason": "The orchestrator states from its own knowledge that the Juicy Lucy is associated with San Antonio, Texas. This fact is contradicted by the gold answer chain: the gold answer is the Treaty of Paris, which ceded territory west to the Mississippi River \u2014 the river next to Minneapolis, Minnesota, the actual home of the Juicy Lucy. The orchestrator's wrong city identification drives the entire wrong answer path. Per rule 3a, this is an Unsupported belief because the stated fact is contradicted by the gold answer (which implies Minneapolis/Mississippi, not San Antonio/San Antonio River).",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The final answer directly follows from the unsupported belief established in coord_r1 (wrong city \u2192 wrong river \u2192 wrong treaty). No new fault is introduced here; the error was committed in coord_r1. Per rule 2, this unit only carries forward the earlier fault.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#26",
+   "title": "who is the father of genetics and what did he study?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identifies the question's target and answers from its own knowledge. The fact stated (Gregor Mendel studied pea plants) is not contradicted by the gold answer or any part of the trace, and the orchestrator does not hedge. Answering without calling an expert is valid per rule 3.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The final answer correctly identifies Gregor Mendel and his study of pea plants, matching the gold answers. The grader's exact-match failure does not reflect a real error; the answer is substantively correct and fuzzy_correct.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#27",
+   "title": "what are the monomer building blocks of dna and rna?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identifies the question as asking about monomer building blocks of DNA and RNA, states the well-established fact that nucleotides are the answer, and provides accurate supporting detail. The fact is not hedged and is not contradicted by anything in the trace or gold answer. Answering from own knowledge without calling an expert is valid per rule 3.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The final answer correctly states that nucleotides are the monomer building blocks of DNA and RNA, matching the gold answer. The additional detail provided is accurate and consistent with the trace. The grader's exact-match failure does not indicate an orchestrator error.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#28",
+   "title": "Who is the father of Peter II of Portugal?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Unsupported belief",
+      "severity": "Critical"
+     },
+     "reason": "The orchestrator states from its own knowledge that Peter II of Portugal was the son of John III, and acts on this belief by deciding no expert consultation is needed. This fact is contradicted by the gold answer (John IV of Portugal). Per rule 3a, this is an Unsupported belief because the own-fact claim is contradicted by the gold answer.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The final answer directly follows from the unsupported belief established in coord_r1. Per rule 2, a later unit that only carries forward an earlier fault without a new fault of its own is Informational; the root fault was committed in coord_r1.",
+     "source": "llm"
+    }
+   ]
+  },
+  {
+   "trace_id": "batch_30.jsonl#29",
+   "title": "\"What does \"\"casa grande\"\" mean in Spanish?\"?",
+   "steps": [
+    {
+     "unit_key": "coord_r1",
+     "kind": "decision",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The orchestrator correctly identifies this as a basic translation question and answers from its own knowledge without hedging. The fact is not contradicted by the gold answer (which includes 'Big House' and 'The Big House', consistent with 'large house'/'big house'). Answering without calling an expert is valid per rule 3.",
+     "source": "llm"
+    },
+    {
+     "unit_key": "final_answer",
+     "kind": "output",
+     "labels": {
+      "error_type": "Informational",
+      "severity": "Informational"
+     },
+     "reason": "The final answer 'large house' is semantically equivalent to the gold answers 'Big House' / 'The Big House' (casa = house, grande = large/big). The orchestrator's answer is correct; the grader's exact-match failure does not indicate an orchestrator error.",
+     "source": "llm"
+    }
+   ]
+  }
+ ]
+}

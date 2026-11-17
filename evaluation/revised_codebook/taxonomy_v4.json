@@ -1,0 +1,51 @@
+{
+  "version": "v4",
+  "themes": {
+    "Task interpretation": [
+      "Goal misunderstanding",
+      "Constraint loss",
+      "Dependency loss"
+    ],
+    "Coordination": [
+      "Wrong subtask generation",
+      "Wrong expert assignment",
+      "Repeating coordination",
+      "Redundant work"
+    ],
+    "Progress management": [
+      "Unsupported belief",
+      "Information loss",
+      "Verification failure",
+      "State-tracking failure",
+      "Premature termination"
+    ]
+  },
+  "subtypes": {
+    "Redundant work": [
+      "duplicate delegation",
+      "duplicate request",
+      "unnecessary additional work"
+    ],
+    "Information loss": [
+      "over-acceptance",
+      "under-weighting",
+      "evidence override",
+      "conflict mishandling"
+    ],
+    "Verification failure": [
+      "missed verification",
+      "insufficient verification",
+      "irrelevant verification",
+      "excessive verification",
+      "repeated verification"
+    ]
+  },
+  "no_error_label": "Informational",
+  "other_label": "OTHER",
+  "severity": [
+    "Critical",
+    "Error",
+    "Warning",
+    "Informational"
+  ]
+}

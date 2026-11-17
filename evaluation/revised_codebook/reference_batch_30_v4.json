@@ -1,0 +1,483 @@
+{
+ "source_file": "analysis/batches/batch_30/batch.jsonl",
+ "taxonomy_version": "v4",
+ "annotator": "reference agreed with the project lead, 2026-09-25",
+ "units": [
+  {
+   "traj_idx": 0,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 0,
+   "step_key": "coord_r2",
+   "label": "Repeating coordination",
+   "subtype": null,
+   "severity": "Critical"
+  },
+  {
+   "traj_idx": 0,
+   "step_key": "final_answer",
+   "label": "Premature termination",
+   "subtype": null,
+   "severity": "Error"
+  },
+  {
+   "traj_idx": 1,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 1,
+   "step_key": "coord_r2",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 1,
+   "step_key": "final_answer",
+   "label": "Premature termination",
+   "subtype": null,
+   "severity": "Critical"
+  },
+  {
+   "traj_idx": 2,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 2,
+   "step_key": "coord_r2",
+   "label": "Goal misunderstanding",
+   "subtype": null,
+   "severity": "Critical"
+  },
+  {
+   "traj_idx": 2,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 3,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 3,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 4,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 4,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 5,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 5,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 6,
+   "step_key": "coord_r1",
+   "label": "Goal misunderstanding",
+   "subtype": null,
+   "severity": "Critical"
+  },
+  {
+   "traj_idx": 6,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 7,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 7,
+   "step_key": "coord_r2",
+   "label": "Verification failure",
+   "subtype": "missed verification",
+   "severity": "Critical"
+  },
+  {
+   "traj_idx": 7,
+   "step_key": "final_answer",
+   "label": "Premature termination",
+   "subtype": null,
+   "severity": "Error"
+  },
+  {
+   "traj_idx": 8,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 8,
+   "step_key": "coord_r2",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 8,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 9,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 9,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 10,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 10,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 11,
+   "step_key": "coord_r1",
+   "label": "Unsupported belief",
+   "subtype": null,
+   "severity": "Critical"
+  },
+  {
+   "traj_idx": 11,
+   "step_key": "coord_r2",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 11,
+   "step_key": "coord_r3",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 11,
+   "step_key": "final_answer",
+   "label": "Premature termination",
+   "subtype": null,
+   "severity": "Error"
+  },
+  {
+   "traj_idx": 12,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 12,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 13,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 13,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 14,
+   "step_key": "coord_r1",
+   "label": "Unsupported belief",
+   "subtype": null,
+   "severity": "Critical"
+  },
+  {
+   "traj_idx": 14,
+   "step_key": "final_answer",
+   "label": "Premature termination",
+   "subtype": null,
+   "severity": "Error"
+  },
+  {
+   "traj_idx": 15,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 15,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 16,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 16,
+   "step_key": "coord_r2",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 16,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 17,
+   "step_key": "coord_r1",
+   "label": "Unsupported belief",
+   "subtype": null,
+   "severity": "Error"
+  },
+  {
+   "traj_idx": 17,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 18,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 18,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 19,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 19,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 20,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 20,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 21,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 21,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 22,
+   "step_key": "coord_r1",
+   "label": "Unsupported belief",
+   "subtype": null,
+   "severity": "Critical"
+  },
+  {
+   "traj_idx": 22,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 23,
+   "step_key": "coord_r1",
+   "label": "Unsupported belief",
+   "subtype": null,
+   "severity": "Critical"
+  },
+  {
+   "traj_idx": 23,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 24,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 24,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 25,
+   "step_key": "coord_r1",
+   "label": "Unsupported belief",
+   "subtype": null,
+   "severity": "Critical"
+  },
+  {
+   "traj_idx": 25,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 26,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 26,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 27,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 27,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 28,
+   "step_key": "coord_r1",
+   "label": "Unsupported belief",
+   "subtype": null,
+   "severity": "Critical"
+  },
+  {
+   "traj_idx": 28,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 29,
+   "step_key": "coord_r1",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  },
+  {
+   "traj_idx": 29,
+   "step_key": "final_answer",
+   "label": "Informational",
+   "subtype": null,
+   "severity": "Informational"
+  }
+ ]
+}
